@@ -1,0 +1,13 @@
+spring:
+  config:
+    import: optional:file:./config/application-local.properties
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/banking_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true

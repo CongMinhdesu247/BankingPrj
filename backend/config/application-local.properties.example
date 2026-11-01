@@ -1,0 +1,5 @@
+# Copy to application-local.properties in this folder and set your local password.
+# Run Maven from backend/ so Spring Boot can find this external configuration.
+spring.datasource.url=jdbc:postgresql://localhost:5432/banking_db
+spring.datasource.username=postgres
+spring.datasource.password=replace-with-your-local-password
