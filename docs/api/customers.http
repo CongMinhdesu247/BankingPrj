@@ -1,0 +1,44 @@
+@token = REPLACE_WITH_ACCESS_TOKEN
+@baseUrl = http://127.0.0.1:8080
+@customerId = REPLACE_WITH_ID_FROM_CREATE_RESPONSE
+
+### Create a simulated customer (change code/email when repeating)
+POST {{baseUrl}}/api/v1/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Request-Id: customer-demo-001
+
+{
+  "customerCode": "KH001",
+  "fullName": "Nguyễn Văn An",
+  "email": "an@example.com",
+  "phone": "0912345678"
+}
+
+### List/search
+GET {{baseUrl}}/api/v1/customers?page=0&size=20&search=KH
+Authorization: Bearer {{token}}
+
+### Detail
+GET {{baseUrl}}/api/v1/customers/{{customerId}}
+Authorization: Bearer {{token}}
+
+### Update contact
+PATCH {{baseUrl}}/api/v1/customers/{{customerId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "an.moi@example.com"
+}
+
+### Clear phone
+PATCH {{baseUrl}}/api/v1/customers/{{customerId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"phone": ""}
+
+### Validation example: size exceeds maximum
+GET {{baseUrl}}/api/v1/customers?size=101
+Authorization: Bearer {{token}}

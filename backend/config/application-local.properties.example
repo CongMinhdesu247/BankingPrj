@@ -1,5 +1,18 @@
 # Copy to application-local.properties in this folder and set your local password.
 # Run Maven from backend/ so Spring Boot can find this external configuration.
 spring.datasource.url=jdbc:postgresql://localhost:5432/banking_db
-spring.datasource.username=postgres
+spring.datasource.username=banking_app
 spring.datasource.password=replace-with-your-local-password
+
+# Provision banking_app as a non-owner member of banking_runtime; see
+# infra/postgres/runtime-role.sql. Keep migration credentials separate.
+# spring.flyway.user=${MIGRATION_DB_USERNAME}
+# spring.flyway.password=${MIGRATION_DB_PASSWORD}
+
+# Required: set JWT_SECRET, or use a Base64 secret generated from at least 32 random bytes.
+banking.security.jwt.secret=${JWT_SECRET}
+
+# Redis must be reachable for login and transfer; profile reads fall back to PostgreSQL.
+spring.data.redis.host=127.0.0.1
+spring.data.redis.port=6379
+banking.redis.namespace=banking:dev

@@ -1,5 +1,9 @@
 # Restructuring report
 
+This is the historical report of the initial restructuring. For the current
+layout, see [project structure](project-structure.vi.md). The inventory below
+includes historical paths and placeholder folders that have since been removed.
+
 ## Follow-up: persistent local PostgreSQL setup
 
 The original restructuring results below describe the initial move. A later

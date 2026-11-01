@@ -1,0 +1,47 @@
+@baseUrl = http://127.0.0.1:8080
+@username = REPLACE_WITH_LOCAL_USERNAME
+@password = REPLACE_WITH_LOCAL_PASSWORD
+@token = REPLACE_WITH_ACCESS_TOKEN
+@customerId = REPLACE_WITH_CUSTOMER_ID
+@userId = REPLACE_WITH_USER_ID
+
+### Login; copy accessToken into token above (do not commit real credentials)
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{"username":"{{username}}","password":"{{password}}"}
+
+### Profile
+GET {{baseUrl}}/api/v1/me
+Authorization: Bearer {{token}}
+
+### CUSTOMER: own accounts
+GET {{baseUrl}}/api/v1/me/accounts?page=0&size=20
+Authorization: Bearer {{token}}
+
+### CUSTOMER: own history
+GET {{baseUrl}}/api/v1/me/transactions?page=0&size=20
+Authorization: Bearer {{token}}
+
+### ADMIN: list users
+GET {{baseUrl}}/api/v1/users?page=0&size=20
+Authorization: Bearer {{token}}
+
+### ADMIN: create customer-linked user; configure a new local password
+POST {{baseUrl}}/api/v1/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username":"customer.demo",
+  "password":"REPLACE_WITH_NEW_LOCAL_PASSWORD",
+  "customerId":"{{customerId}}",
+  "roles":["CUSTOMER"]
+}
+
+### ADMIN: disable a user; old token becomes unusable on next request
+PATCH {{baseUrl}}/api/v1/users/{{userId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"enabled":false}

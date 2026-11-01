@@ -1,0 +1,45 @@
+@token = REPLACE_WITH_ACCESS_TOKEN
+@baseUrl = http://127.0.0.1:8080
+@sourceAccountId = REPLACE_WITH_FUNDED_SOURCE_ID
+@destinationAccountId = REPLACE_WITH_DESTINATION_ID
+@transactionId = REPLACE_WITH_TRANSACTION_ID
+
+### Transfer (requires an already funded development account; no public top-up API)
+POST {{baseUrl}}/api/v1/transfers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Request-Id: transfer-demo-001
+Idempotency-Key: demo-transfer-001
+
+{
+  "sourceAccountId": "{{sourceAccountId}}",
+  "destinationAccountId": "{{destinationAccountId}}",
+  "amount": "200000",
+  "currency": "VND",
+  "description": "Chuyển tiền nội bộ demo"
+}
+
+### Detail including both ledger entries
+GET {{baseUrl}}/api/v1/transactions/{{transactionId}}
+Authorization: Bearer {{token}}
+
+### History for source (also works for destination)
+GET {{baseUrl}}/api/v1/accounts/{{sourceAccountId}}/transactions?page=0&size=20
+Authorization: Bearer {{token}}
+
+### History for a local Vietnamese day, expressed in UTC: [00:00 VN, next 00:00 VN)
+GET {{baseUrl}}/api/v1/accounts/{{sourceAccountId}}/transactions?from=2026-10-26T17:00:00Z&to=2026-10-27T17:00:00Z
+Authorization: Bearer {{token}}
+
+### Self-transfer must fail with 400 SAME_ACCOUNT
+POST {{baseUrl}}/api/v1/transfers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: demo-self-transfer-001
+
+{
+  "sourceAccountId": "{{sourceAccountId}}",
+  "destinationAccountId": "{{sourceAccountId}}",
+  "amount": "1",
+  "currency": "VND"
+}

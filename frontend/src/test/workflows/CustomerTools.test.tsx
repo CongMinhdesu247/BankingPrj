@@ -1,0 +1,32 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
+import { beforeEach, expect, it, vi } from 'vitest';
+import { StatementPage } from '../../features/accounts/pages/StatementPage';
+import { AccountRiskPage } from '../../features/fraud/pages/AccountRiskPage';
+import { customerToolsApi } from '../../features/accounts/api/customerToolsApi';
+import { request } from '../../shared/api/httpClient';
+import { downloadCsv } from '../../shared/lib/csv';
+vi.mock('../../features/accounts/providers/AccountsProvider', () => ({ useAccounts: () => ({ accounts: [{ id: 'mine', accountNumber: '1012345678' }], loading: false, error: null, refresh: vi.fn() }) }));
+vi.mock('../../features/accounts/api/customerToolsApi', () => ({ customerToolsApi: { statement: vi.fn() } }));
+vi.mock('../../shared/api/httpClient', async original => ({ ...await original<typeof import('../../shared/api/httpClient')>(), request: vi.fn() }));
+vi.mock('../../shared/lib/csv', () => ({ downloadCsv: vi.fn() }));
+beforeEach(() => vi.clearAllMocks());
+it('keeps whole-month totals separate from paginated rows and labels export scope', async () => {
+  vi.mocked(customerToolsApi.statement).mockResolvedValue({ accountId: 'mine', accountNumber: '1012345678', month: '2026-10', openingBalance: '1000000', incoming: '500000', outgoing: '200000', closingBalance: '1300000', entries: { content: [{ transactionId: 'tx', reference: 'TRF-ONE', description: 'Cà phê', direction: 'DEBIT', amount: '100000', balanceAfter: '1300000', createdAt: '2026-10-30T10:00:00Z' }], page: 0, size: 1, totalElements: 2, totalPages: 2, first: true, last: false } });
+  render(<MemoryRouter><StatementPage /></MemoryRouter>);
+  expect(await screen.findByText('TRF-ONE')).toBeInTheDocument();
+  expect(screen.getByText('500.000 ₫')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: 'Xuất CSV trang này' }));
+  expect(downloadCsv).toHaveBeenCalledWith('sao-ke-1012345678-2026-10-trang-1.csv', expect.arrayContaining([expect.arrayContaining(['TRF-ONE', '100000', '1300000'])]));
+  await userEvent.click(screen.getByRole('button', { name: 'Trang sau' }));
+  expect(customerToolsApi.statement).toHaveBeenLastCalledWith('mine', expect.any(String), 1, expect.any(AbortSignal));
+});
+it('shows unassessed risk without inventing a zero risk score and sends filters to server', async () => {
+  vi.mocked(request).mockResolvedValue({ content: [{ accountId: 'one', accountNumber: '1012345678', customerId: 'customer', fullName: 'Nguyễn An', customerCode: 'AN', status: 'ACTIVE', riskLevel: 'UNASSESSED', score: 0, analyzed: 0, pending: 2, openAlerts: 0, lastAnalyzedAt: null }], page: 0, size: 20, totalElements: 1, totalPages: 1, first: true, last: true });
+  render(<MemoryRouter><AccountRiskPage /></MemoryRouter>);
+  expect(await screen.findByText('Kết quả chưa đầy đủ')).toBeInTheDocument();
+  expect(screen.queryByText(/0\/100/)).not.toBeInTheDocument();
+  await userEvent.selectOptions(screen.getByLabelText('Mức rủi ro'), 'HIGH');
+  expect(request).toHaveBeenLastCalledWith(expect.stringContaining('riskLevel=HIGH'), { signal: expect.any(AbortSignal) });
+});

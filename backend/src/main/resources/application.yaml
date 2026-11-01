@@ -1,13 +1,99 @@
 spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:127.0.0.1:9092}
   config:
     import: optional:file:./config/application-local.properties
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/banking_db}
-    username: ${DB_USERNAME:postgres}
+    username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+
+  flyway:
+    enabled: true
+    # Set these to a separate schema owner when the application uses banking_runtime.
+    user: ${MIGRATION_DB_USERNAME:${spring.datasource.username}}
+    password: ${MIGRATION_DB_PASSWORD:${spring.datasource.password}}
+    locations: classpath:db/migration
+    default-schema: public
+    baseline-on-migrate: false
+    clean-disabled: true
+
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+      accept-float-as-int: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      connect-timeout: 500ms
+      timeout: 500ms
+      repositories:
+        enabled: false
+
+logging:
+  level:
+    org.springframework.web.servlet.mvc.method.annotation: WARN
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
+    org.hibernate.orm.jdbc.error: "OFF"
+  pattern:
+    level: "%5p [requestId:%X{requestId}]"
+
+# Local development bind; external deployment needs separate infrastructure configuration.
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  forward-headers-strategy: none
+
+banking:
+  kafka:
+    enabled: true
+    topic-prefix: ${KAFKA_TOPIC_PREFIX:banking.dev}
+    partitions: 3
+    retry-backoff-ms: 250
+    retry-attempts: 2
+  fraud:
+    recovery-enabled: true
+    recovery-delay-ms: 30000
+    recovery-initial-delay-ms: 10000
+  redis:
+    namespace: ${REDIS_NAMESPACE:banking:dev}
+    login-max-failures: 5
+    login-ttl-seconds: 900
+    login-rate-limit: 30
+    transfer-rate-limit: 30
+    rate-window-seconds: 60
+    cache-ttl-seconds: 60
+    counter-window-seconds: 60
+    counter-ttl-seconds: 120
+  security:
+    bootstrap:
+      enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+      username: ${BOOTSTRAP_ADMIN_USERNAME:admin}
+      password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    jwt:
+      secret: ${JWT_SECRET:}
+      issuer: banking-local
+      audience: banking-api
+      ttl-seconds: 900
+  transfer:
+    lock-timeout-ms: 2000
+    # Demo parameters, not official Agribank policy. Scope: each source account.
+    default-per-transfer: 100000000
+    default-daily: 500000000
+
+springdoc:
+  paths-to-match: /api/v1/**
+  override-with-generic-response: false
+  swagger-ui:
+    disable-swagger-default-url: true
+    persist-authorization: false

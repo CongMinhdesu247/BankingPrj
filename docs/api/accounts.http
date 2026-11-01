@@ -1,0 +1,66 @@
+@token = REPLACE_WITH_ACCESS_TOKEN
+@baseUrl = http://127.0.0.1:8080
+@customerId = REPLACE_WITH_CUSTOMER_ID
+@accountId = REPLACE_WITH_ACCOUNT_ID
+
+### Create customer first, then copy the returned id to customerId
+POST {{baseUrl}}/api/v1/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerCode": "KH_ACCOUNT_001",
+  "fullName": "Nguyễn Văn An",
+  "email": "account.demo@example.com"
+}
+
+### Open account (copy id from response to accountId)
+POST {{baseUrl}}/api/v1/customers/{{customerId}}/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Request-Id: account-demo-create
+
+{"currency": "VND"}
+
+### List only this customer's accounts
+GET {{baseUrl}}/api/v1/customers/{{customerId}}/accounts?page=0&size=20
+Authorization: Bearer {{token}}
+
+### Detail
+GET {{baseUrl}}/api/v1/accounts/{{accountId}}
+Authorization: Bearer {{token}}
+
+### Freeze
+PATCH {{baseUrl}}/api/v1/accounts/{{accountId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"status": "FROZEN"}
+
+### Unfreeze
+PATCH {{baseUrl}}/api/v1/accounts/{{accountId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"status": "ACTIVE"}
+
+### Close zero-balance account (terminal state)
+PATCH {{baseUrl}}/api/v1/accounts/{{accountId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"status": "CLOSED"}
+
+### Reopen closed account: expect 409 ACCOUNT_CLOSED
+PATCH {{baseUrl}}/api/v1/accounts/{{accountId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"status": "ACTIVE"}
+
+### Client-supplied balance: expect 400 INVALID_REQUEST
+POST {{baseUrl}}/api/v1/customers/{{customerId}}/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"currency": "VND", "balance": "1000000"}

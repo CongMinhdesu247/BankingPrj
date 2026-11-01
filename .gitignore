@@ -30,7 +30,8 @@ build/
 !**/src/test/**/build/
 
 ### VS Code ###
-.vscode/
+.vscode/*
+!.vscode/settings.json
 
 ### Full-stack build output ###
 **/node_modules/
@@ -50,3 +51,13 @@ Thumbs.db
 
 # Machine-local PostgreSQL credentials
 /backend/config/application-local.properties
+/backend/config/*.credentials.txt
+/backend/local-backups/
+
+# Browser test output and local-only portal demo credentials
+/frontend/test-results/
+/frontend/playwright-report/
+/frontend/.local/
+/.playwright-cli/
+/output/playwright/
+/frontend/output/

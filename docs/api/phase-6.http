@@ -1,0 +1,54 @@
+@baseUrl = http://127.0.0.1:8080/api/v1
+@customerToken = REPLACE_WITH_CUSTOMER_TOKEN
+@adminToken = REPLACE_WITH_ADMIN_TOKEN
+@sourceId = REPLACE_WITH_OWN_SOURCE_ACCOUNT_UUID
+@destinationId = REPLACE_WITH_DESTINATION_UUID
+@beneficiaryId = REPLACE_WITH_BENEFICIARY_UUID
+@transferKey = REPLACE_WITH_ONE_NEW_UUID_PER_TRANSFER_INTENT
+
+### CUSTOMER: effective source-account limit
+GET {{baseUrl}}/me/transfer-limits?accountId={{sourceId}}
+Authorization: Bearer {{customerToken}}
+
+### ADMIN: configure source-account limits
+PUT {{baseUrl}}/accounts/{{sourceId}}/transfer-limit
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+X-Request-Id: phase6-limit-001
+
+{"perTransferAmount":"100000000","dailyAmount":"500000000"}
+
+### CUSTOMER: retry this exact key/payload when response is lost, within 7 days
+POST {{baseUrl}}/transfers
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+Idempotency-Key: {{transferKey}}
+X-Request-Id: phase6-transfer-001
+
+{"sourceAccountId":"{{sourceId}}","destinationAccountId":"{{destinationId}}","amount":"1000","currency":"VND","description":"Demo"}
+
+### CUSTOMER: add beneficiary
+POST {{baseUrl}}/me/beneficiaries
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{"destinationAccountId":"{{destinationId}}","nickname":"Test contact"}
+
+### CUSTOMER: active beneficiaries
+GET {{baseUrl}}/me/beneficiaries?page=0&size=20
+Authorization: Bearer {{customerToken}}
+
+### CUSTOMER: update nickname
+PATCH {{baseUrl}}/me/beneficiaries/{{beneficiaryId}}
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{"nickname":"Updated contact"}
+
+### CUSTOMER: soft delete, keep historical timestamps
+DELETE {{baseUrl}}/me/beneficiaries/{{beneficiaryId}}
+Authorization: Bearer {{customerToken}}
+
+### ADMIN: failed transfer audit
+GET {{baseUrl}}/audit-logs?action=TRANSFER_FAILED&outcome=FAILURE&page=0&size=20
+Authorization: Bearer {{adminToken}}
