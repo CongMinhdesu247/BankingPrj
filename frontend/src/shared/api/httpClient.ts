@@ -62,11 +62,18 @@ export async function request<T>(path: string, options: Options = {}): Promise<T
   const token = options.auth === false ? null : accessToken;
   const generation = sessionGeneration;
   const headers: Record<string, string> = { Accept: 'application/json', 'X-Request-Id': crypto.randomUUID() };
+  const url = `${import.meta.env.VITE_API_BASE_URL || '/api/v1'}${path}`;
+  // API calls omit cookies, including ngrok's browser-warning acknowledgement.
+  // Ask ngrok for the API response instead of its interstitial page.
+  if (/\.ngrok-free\.(app|dev)$/.test(window.location.hostname)
+      && new URL(url, window.location.href).origin === window.location.origin) {
+    headers['ngrok-skip-browser-warning'] = '1';
+  }
   if (token) headers.Authorization = `Bearer ${token}`;
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (options.key) headers['Idempotency-Key'] = options.key;
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || '/api/v1'}${path}`, {
+    const response = await fetch(url, {
       method: options.method ?? 'GET', headers, signal, credentials: 'omit', cache: 'no-store', redirect: 'error',
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });

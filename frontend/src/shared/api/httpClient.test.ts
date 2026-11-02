@@ -1,6 +1,29 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { ApiFailure, errorMessage, request, setAccessToken, setUnauthorizedHandler } from './httpClient';
-afterEach(() => { setAccessToken(null); setUnauthorizedHandler(undefined); });
+afterEach(() => { setAccessToken(null); setUnauthorizedHandler(undefined); vi.unstubAllEnvs(); });
+it.each(['demo.ngrok-free.dev', 'demo.ngrok-free.app'])('requests JSON without the ngrok warning on %s, without sending cookies', async hostname => {
+  vi.stubGlobal('window', { location: new URL(`https://${hostname}/login`) });
+  const fetch = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+  vi.stubGlobal('fetch', fetch);
+  await request('/me');
+  const options = fetch.mock.calls[0][1];
+  expect(options.headers['ngrok-skip-browser-warning']).toBe('1');
+  expect(options.credentials).toBe('omit');
+});
+it('does not send the ngrok header on localhost', async () => {
+  const fetch = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+  vi.stubGlobal('fetch', fetch);
+  await request('/me');
+  expect(fetch.mock.calls[0][1].headers).not.toHaveProperty('ngrok-skip-browser-warning');
+});
+it('does not send the ngrok header to an API on another origin', async () => {
+  vi.stubGlobal('window', { location: new URL('https://demo.ngrok-free.dev/login') });
+  vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test/api/v1');
+  const fetch = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+  vi.stubGlobal('fetch', fetch);
+  await request('/me');
+  expect(fetch.mock.calls[0][1].headers).not.toHaveProperty('ngrok-skip-browser-warning');
+});
 it('sends the exact money string and original idempotency key without cookies', async () => {
   const fetch = vi.fn().mockResolvedValue(new Response('{}', { status: 201 })); vi.stubGlobal('fetch', fetch); setAccessToken('in-memory-test-token');
   await request('/transfers', { method: 'POST', body: { amount: '99999999999999999' }, key: 'same-key' });

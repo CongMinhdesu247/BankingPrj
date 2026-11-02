@@ -1,0 +1,5 @@
+target
+config
+local-backups
+*.log
+.env*

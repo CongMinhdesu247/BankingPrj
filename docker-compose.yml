@@ -1,2 +1,122 @@
-# Reserved for future infrastructure. No containers are configured yet.
-services: {}
+name: banking-local
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: banking_docker_demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DOCKER_DB_PASSWORD:?Run Initialize-Docker.ps1 first}
+    volumes:
+      - postgres_demo_data:/var/lib/postgresql
+      - ./infra/docker/init-postgres.sh:/docker-entrypoint-initdb.d/10-banking.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U banking_demo -d banking_docker_demo']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes']
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  kafka-init:
+    image: apache/kafka:4.1.2
+    user: '0:0'
+    entrypoint: [/bin/sh, -c]
+    command: ['chown -R 1000:1000 /data']
+    volumes:
+      - kafka_data:/data
+    restart: 'no'
+
+  kafka:
+    image: apache/kafka:4.1.2
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD-SHELL, '/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null 2>&1']
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CONFIG_IMPORT: ''
+      SERVER_ADDRESS: 0.0.0.0
+      DB_URL: jdbc:postgresql://postgres:5432/banking_docker_demo
+      DB_USERNAME: banking_demo
+      DB_PASSWORD: ${DOCKER_DB_PASSWORD:?Run Initialize-Docker.ps1 first}
+      REDIS_HOST: redis
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC_PREFIX: banking.docker
+      JWT_SECRET: ${DOCKER_JWT_SECRET:?Run Initialize-Docker.ps1 first}
+      BOOTSTRAP_ADMIN_ENABLED: 'true'
+      BOOTSTRAP_ADMIN_USERNAME: docker.admin
+      BOOTSTRAP_ADMIN_PASSWORD: ${DOCKER_ADMIN_PASSWORD:?Run Initialize-Docker.ps1 first}
+      BANKING_SECURITY_ALLOWED_ORIGINS: ${DOCKER_ALLOWED_ORIGINS:-http://localhost:8090,http://127.0.0.1:8090}
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx768m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, 'curl -fsS http://127.0.0.1:8080/v3/api-docs >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    ports:
+      - '127.0.0.1:8090:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1/healthz']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres_demo_data:
+  redis_data:
+  kafka_data:
