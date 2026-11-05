@@ -31,7 +31,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authorize -> authorize
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                .requestMatchers("/api/v1/auth/login", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v1/auth/recovery-options", "/v3/api-docs/**", "/v3/api-docs.yaml", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v1/auth/recovery-options", "/v3/api-docs/**", "/v3/api-docs.yaml", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/v1/fraud-rules", "/api/v1/fraud-rules/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/fraud/**", "/api/v1/fraud-alerts", "/api/v1/fraud-alerts/**").hasRole("RISK_OFFICER")
                 .requestMatchers("/api/v1/staff/**").hasAnyRole("BANK_STAFF","RISK_OFFICER","ADMIN")

@@ -60,3 +60,11 @@ it('does not let a late success clear a different session’s newer intent', asy
   const view = mount(); const user = await prepare(); await user.click(screen.getByRole('button', { name: 'Xác nhận chuyển tiền' })); view.unmount();
   const other = { ...pending(), ownerId: '00000000-0000-0000-0000-000000000004' }; savePending(other); await act(async () => resolve(result)); expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toEqual(other);
 });
+
+it('formats thousands in the input while sending the exact unformatted amount', async () => {
+  mount(); const user = await prepare('500000');
+  expect(screen.getByLabelText('Số tiền', { exact: true })).toHaveValue('500.000');
+  await user.click(screen.getByRole('button', { name: 'Xác nhận chuyển tiền' }));
+  await screen.findByText('Chứng từ đã ghi nhận');
+  expect(transferApi.send).toHaveBeenCalledWith(expect.objectContaining({ amount: '500000' }), expect.any(String));
+});

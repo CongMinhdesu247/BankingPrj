@@ -112,3 +112,15 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
+
+## Chatbot hỗ trợ AI
+
+Đã tích hợp khung chat khách hàng với Gemini API ở backend. Xem [cách bật Gemini và giới hạn miễn phí](docs/guides/ai-chatbot.vi.md). Khi chưa cấu hình API key, khung chat dùng hướng dẫn có sẵn và ghi rõ trạng thái.
+
+## Đăng ký khách hàng
+
+Chọn **Tạo tài khoản** tại trang đăng nhập. Mỗi đăng ký tạo quyền CUSTOMER và một tài khoản VND số dư 0. Xem [luồng đăng ký](docs/guides/customer-registration.vi.md).
+
+## Biểu đồ tổng quan
+
+Trang Tổng quan có biểu đồ dòng tiền vào/ra và cơ cấu dòng tiền theo 7/30 ngày, dùng số liệu thực của khách hàng. Xem [hướng dẫn biểu đồ](docs/guides/dashboard-charts.vi.md).
