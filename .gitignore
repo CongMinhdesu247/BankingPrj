@@ -1,6 +1,4 @@
 HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -22,7 +20,6 @@ target/
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
-/dist/
 /nbdist/
 /.nb-gradle/
 build/
@@ -61,3 +58,28 @@ Thumbs.db
 /.playwright-cli/
 /output/playwright/
 /frontend/output/
+
+# Temporary files and editor backups
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*~
+*.swp
+*.swo
+
+# JVM crash and memory dumps
+hs_err_pid*
+replay_pid*
+*.hprof
+
+# Test coverage and Python helper caches
+**/coverage/
+**/.nyc_output/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local runtime files
+/.local/

@@ -1,7 +1,7 @@
 # Cấu trúc dự án
 
 ```text
-banking/
+BankingPrj/
   backend/
     src/main/java/com/minh/banking/  Module nghiệp vụ và cấu hình Spring
     src/main/resources/            Cấu hình ứng dụng và Flyway migrations
@@ -15,13 +15,14 @@ banking/
       app/                         Khởi tạo ứng dụng, router và layout
       features/                    Mã gom theo nghiệp vụ
       shared/                      API HTTP, UI, hook, kiểu và tiện ích chung
-      assets/
+      assets/fonts/                Font PDF và giấy phép
       styles/
       test/                        Setup và kiểm thử qua nhiều nghiệp vụ
       main.tsx
     e2e/
     public/
-  infra/                           Cài đặt Redis, Kafka, PostgreSQL và giám sát
+  scripts/                         Điều phối Docker và demo toàn dự án
+  infra/                           Docker, Redis, Kafka, PostgreSQL và giám sát
   docs/
     architecture/
     api/
@@ -30,27 +31,54 @@ banking/
     reports/
     reviews/
     screenshots/
-  .github/                         Công cụ hỗ trợ dự án
-  .vscode/settings.json             Ẩn file sinh tự động trong Explorer
+  .github/                         CI và công cụ hỗ trợ dự án
+  .vscode/settings.json            Cấu hình editor dùng chung
   docker-compose.yml
   README.md
 ```
 
-Backend giữ package nghiệp vụ hiện có để các đường dẫn Maven, Spring, script và
-cấu hình local tiếp tục hoạt động. Đã bỏ các `.gitkeep` và thư mục rỗng vốn được
-tạo trước cho tính năng tương lai; tạo package mới khi thực sự có mã.
+Backend tổ chức theo module nghiệp vụ. Các module đã phân lớp giữ controller,
+service, repository, entity, DTO và mapper trong cùng nghiệp vụ. Package Java và
+đường dẫn Maven/Spring/resources giữ nguyên để không ảnh hưởng cơ chế đăng ký bean,
+Flyway, script và cấu hình local. Chỉ tạo package khi có mã thực tế.
 
 Frontend gom trang, API, provider và component theo nghiệp vụ. Mã dùng chung ở
-`shared/`; router và layout ở `app/`. Xem [quy ước frontend](../../frontend/README.md).
-Kiểm thử đơn vị vẫn nằm cạnh mã nguồn, còn kịch bản liên quan nhiều nghiệp vụ nằm
-trong `src/test/workflows/`.
+`shared/`; router và layout ở `app/`. Không giữ lớp `src/services/` song song với
+API thực trong feature. Xem [quy ước frontend](../../frontend/README.md).
+Test đơn vị nằm cạnh mã nguồn; kịch bản qua nhiều nghiệp vụ ở `src/test/workflows/`.
 
-Các thư mục sinh tự động như `target/`, `node_modules/`, `dist/`, `output/`,
-`test-results/`, `playwright-report/`, `.playwright-cli/`, cùng backup local được
-ẩn trong Explorer của VS Code. Chúng vẫn có trên đĩa để các công cụ đang dùng
-đường dẫn cũ tiếp tục chạy. Có thể xem lại bằng cách tắt quy tắc tương ứng trong
-`.vscode/settings.json`. Không đặt mã nguồn trong các thư mục này.
+## Script điều phối
 
-Thêm hướng dẫn sử dụng vào `docs/guides/`, báo cáo giai đoạn vào `docs/reports/`
-và báo cáo rà soát vào `docs/reviews/`. Không tạo thư mục trống để giữ chỗ.
-Xem [mục lục tài liệu](../README.md).
+Chạy từ thư mục gốc repository:
+
+```powershell
+.\scripts\Initialize-Docker.ps1
+pwsh -NoProfile -File .\scripts\Seed-DockerDemo.ps1
+pwsh -File .\scripts\Start-Demo.ps1
+.\scripts\Start-PublicDemo.ps1 -PublicUrl 'https://ten-duoc-cap.ngrok-free.app'
+```
+
+Chọn script theo hướng dẫn trong [README](../../README.md), không chạy cả bốn liên tiếp.
+Initialize chỉ dùng lần đầu; Start-Demo tạo bộ dữ liệu demo riêng. Các script tính
+đường dẫn từ vị trí file thay vì phụ thuộc working directory của terminal.
+
+Hai công cụ kiểm thử Docker độc lập nằm trong `backend/scripts/Verify-Cashflow.ps1`
+và `backend/scripts/Verify-Registration.ps1`. Chạy bằng PowerShell 7; cần Docker
+Desktop đang hoạt động. Chúng tự chọn working directory `backend/`, tạo PostgreSQL/Redis
+test riêng và dừng container test khi hoàn tất.
+
+## File sinh tự động và dữ liệu local
+
+`.gitignore` chặn dependency, build output, log, file tạm, coverage, snapshot/ảnh
+automation và thông tin cấu hình riêng. Giữ lockfile, migration, font/license và
+ảnh tài liệu đã tuyển chọn trong `docs/screenshots/`. Không thêm `.gitkeep` cho
+thư mục chưa có mã.
+
+`backend/target/portal-demo/` hiện chứa PostgreSQL data và trạng thái demo.
+Không xóa toàn bộ `backend/target/` hoặc chạy `mvnw clean` khi cần giữ demo native.
+`.env`, `backend/config/*.credentials.txt` và `frontend/.local/` là dữ liệu local
+cần giữ; việc ignore không có nghĩa chúng có thể bị xóa an toàn.
+
+Thêm hướng dẫn vào `docs/guides/`, báo cáo giai đoạn vào `docs/reports/` và báo cáo
+rà soát vào `docs/reviews/`. Xem [mục lục tài liệu](../README.md) và
+[kế hoạch dọn workspace đã duyệt](workspace-cleanup-plan.vi.md).

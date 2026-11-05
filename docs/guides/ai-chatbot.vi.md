@@ -78,6 +78,6 @@ phản hồi live và quyền truy cập model của dự án Google.
 
 ## Không gửi được tin nhắn
 
-- Dùng Docker: mở http://localhost:8090. Bản demo cũ ở cổng 5174 có thể đang trỏ tới backend 8081 chưa có API chatbot. Không chạy lại Start-Demo.ps1 chỉ để sửa chatbot vì script tạo bộ dữ liệu demo mới.
+- Dùng Docker: mở http://localhost:8090. Bản demo cũ ở cổng 5174 có thể đang trỏ tới backend 8081 chưa có API chatbot. Không chạy lại `scripts/Start-Demo.ps1` chỉ để sửa chatbot vì script tạo bộ dữ liệu demo mới.
 - Nhập key vào .env, không phải .env.example. Giá trị gen-lang-client-… là project ID, không phải API key; vào mục API Keys của Google AI Studio để sao chép key thật.
 - Sau khi sửa .env, chạy docker compose up -d --build backend web để nạp lại môi trường. Không cần xóa volume hoặc tạo lại tài khoản.

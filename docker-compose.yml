@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: banking_docker_demo
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DOCKER_DB_PASSWORD:?Run Initialize-Docker.ps1 first}
+      POSTGRES_PASSWORD: ${DOCKER_DB_PASSWORD:?Run run.bat or sh ./run.sh to initialize .env}
     volumes:
       - postgres_demo_data:/var/lib/postgresql
       - ./infra/docker/init-postgres.sh:/docker-entrypoint-initdb.d/10-banking.sh:ro
@@ -70,21 +70,24 @@ services:
     restart: unless-stopped
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_IMPORT: ''
       SERVER_ADDRESS: 0.0.0.0
       DB_URL: jdbc:postgresql://postgres:5432/banking_docker_demo
       DB_USERNAME: banking_demo
-      DB_PASSWORD: ${DOCKER_DB_PASSWORD:?Run Initialize-Docker.ps1 first}
+      DB_PASSWORD: ${DOCKER_DB_PASSWORD:?Run run.bat or sh ./run.sh to initialize .env}
       REDIS_HOST: redis
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC_PREFIX: banking.docker
-      JWT_SECRET: ${DOCKER_JWT_SECRET:?Run Initialize-Docker.ps1 first}
+      JWT_SECRET: ${DOCKER_JWT_SECRET:?Run run.bat or sh ./run.sh to initialize .env}
       BOOTSTRAP_ADMIN_ENABLED: 'true'
       BOOTSTRAP_ADMIN_USERNAME: docker.admin
-      BOOTSTRAP_ADMIN_PASSWORD: ${DOCKER_ADMIN_PASSWORD:?Run Initialize-Docker.ps1 first}
+      BOOTSTRAP_ADMIN_PASSWORD: ${DOCKER_ADMIN_PASSWORD:?Run run.bat or sh ./run.sh to initialize .env}
       BANKING_SECURITY_ALLOWED_ORIGINS: ${DOCKER_ALLOWED_ORIGINS:-http://localhost:8090,http://127.0.0.1:8090}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
@@ -105,7 +108,10 @@ services:
     restart: unless-stopped
 
   web:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
     ports:
       - '127.0.0.1:8090:80'
     depends_on:

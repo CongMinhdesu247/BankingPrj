@@ -3,7 +3,7 @@ Sau khi bật PC lại, bạn làm 3 bước:
 2. Mở PowerShell.
 3. Chạy:
    cd C:\Users\ADMIN\Downloads\BankingPrj
-   .\Start-PublicDemo.ps1 -PublicUrl "https://unselect-rebate-tall.ngrok-free.dev"
+   .\scripts\Start-PublicDemo.ps1 -PublicUrl "https://unselect-rebate-tall.ngrok-free.dev"
 Script sẽ tự khởi động các dịch vụ Docker, chờ chúng sẵn sàng rồi mở ngrok. Không cần tạo lại tài khoản demo hay nhập lại authtoken mỗi lần.
 
 Người ở xa truy cập bằng link cũ:
@@ -24,103 +24,84 @@ cd C:\Users\ADMIN\Downloads\BankingPrj
 docker compose up -d --build
 
 
-
-
 # Bank Transaction & Fraud Monitoring System
 
-## Chạy bằng Docker Desktop (Windows)
+## Mở ứng dụng trên localhost
 
-Đã có stack Docker gồm React/Nginx, Spring Boot, PostgreSQL, Redis và Kafka.
-Xem [hướng dẫn Docker trên PC](docs/guides/docker-local.vi.md) để khởi động,
-tạo tài khoản mô phỏng và giữ dữ liệu sau khi tắt máy.
+Ứng dụng chạy tại **[http://localhost:8090](http://localhost:8090)**. Docker khởi động đầy đủ giao diện, API và các dịch vụ đi kèm.
 
-```powershell
-.\Initialize-Docker.ps1
-docker compose up -d --build --wait --wait-timeout 300
-pwsh -NoProfile -File .\Seed-DockerDemo.ps1
-```
+### Lần đầu sử dụng
 
-Chỉ chạy Initialize-Docker lần đầu. Website: **http://localhost:8090**.
-Database Docker riêng, không dùng database native của các script bên dưới.
+1. Cài và mở **Docker Desktop**, chờ Docker sẵn sàng.
+2. Clone hoặc copy dự án về máy, rồi mở thư mục `BankingPrj`.
+3. Chạy file tương ứng với hệ điều hành:
 
-## Chạy giao diện hoàn chỉnh sau khi clone (Windows)
+| Hệ điều hành | Cách khởi động |
+| --- | --- |
+| Windows | Nhấp đúp **`run.bat`** |
+| macOS / Linux | Mở terminal tại thư mục dự án và chạy **`sh ./run.sh`** |
 
-Repository này chứa giao diện React đầy đủ và backend thực tế. Để đăng nhập,
-chuyển tiền và xem dữ liệu mẫu, chạy demo bên dưới; `npm run dev` riêng chỉ
-khởi động frontend và vẫn cần backend cho các nghiệp vụ.
+Chờ thông báo **`[DONE]`**, sau đó mở **http://localhost:8090** trên trình duyệt. Lần đầu có thể mất vài phút để tải dependencies và build ứng dụng.
 
-### Chuẩn bị một lần
+Script tự tạo `.env` khi chưa có và chờ các dịch vụ sẵn sàng. Không cần cài Java, Node.js hay PostgreSQL riêng.
 
-Cài Git, **PowerShell 7** (`pwsh`), **Node.js >= 22.12**, **JDK 21** và
-**PostgreSQL 18** (cần các công cụ trong thư mục `bin`). Cài WSL Ubuntu nếu chưa có:
+### Đăng nhập
 
-```powershell
-wsl --install -d Ubuntu
-```
+- **Khách hàng mới:** chọn **Tạo tài khoản** trên trang đăng nhập. Tài khoản được tạo với số dư ban đầu bằng 0.
+- **Quản trị viên:** tên đăng nhập `docker.admin`; mật khẩu là giá trị `DOCKER_ADMIN_PASSWORD` trong file `.env`.
+- **Tài khoản demo đã có:** dùng thông tin trong `backend/config/docker-demo.credentials.txt`, nếu trước đó đã tạo dữ liệu mẫu.
 
-Khởi động lại máy nếu Windows yêu cầu, mở Ubuntu và hoàn tất tạo người dùng.
-Clone repository, mở PowerShell 7 tại thư mục vừa clone:
+Để tạo dữ liệu mẫu trên Windows, mở PowerShell 7 tại thư mục dự án sau khi ứng dụng đã sẵn sàng và chạy:
 
 ```powershell
-git clone https://github.com/CongMinhdesu247/BankingPrj.git
-cd BankingPrj
-wsl -d Ubuntu -u root -- apt-get update
-wsl -d Ubuntu -u root -- apt-get install -y redis-server redis-tools
-pwsh -File ./backend/scripts/Install-Kafka.ps1
+pwsh -NoProfile -File ./scripts/Seed-DockerDemo.ps1
 ```
 
-### Khởi động demo
+### Những lần mở tiếp theo
 
-Từ thư mục gốc repository (không cần đường dẫn máy của tác giả):
+Mở Docker Desktop, rồi chạy lại **`run.bat`** hoặc **`sh ./run.sh`**. Tài khoản và dữ liệu trong Docker volumes được giữ lại.
 
-```powershell
-pwsh -File ./Start-Demo.ps1
+Nếu không có thay đổi mã nguồn, có thể khởi động nhanh từ terminal tại thư mục dự án:
+
+```bash
+docker compose up -d --wait --wait-timeout 300
 ```
 
-Script cài thư viện theo lockfile, build frontend/backend và khởi động PostgreSQL,
-Redis, Kafka, API cùng giao diện demo. Mở **http://127.0.0.1:5174** sau thông báo
-`Isolated portal demo ready`. Cần Internet cho lần tải dependency đầu tiên.
+### Dừng ứng dụng và xem lỗi
 
-Nếu PostgreSQL nằm ở vị trí khác:
+Dừng ứng dụng, giữ dữ liệu:
 
-```powershell
-pwsh -File ./Start-Demo.ps1 -PostgreSqlBin 'D:\PostgreSQL\18\bin'
+```bash
+docker compose stop
 ```
 
-Tài khoản và mật khẩu được tạo ngẫu nhiên khi chạy, lưu trong
-`backend/config/docker-demo.credentials.txt` (không đưa lên Git).
-Dùng `username`/`password` để đăng nhập khách hàng; `staffUsername`/`staffPassword`,
-`riskUsername`/`riskPassword`, `adminUsername`/`adminPassword` cho các vai trò khác.
-Không cần cấu hình `application-local.properties` cho demo này.
+Nếu không mở được localhost, kiểm tra Docker Desktop đang chạy và xem trạng thái, log:
 
-Demo tạo database riêng, tài khoản và số dư mô phỏng; không dùng database cá nhân.
-Mỗi lần chạy tạo bộ dữ liệu mới. Dừng demo trước khi chạy lại:
-
-```powershell
-pwsh -File ./backend/scripts/Stop-PortalDemo.ps1
+```bash
+docker compose ps -a
+docker compose logs --tail 100
 ```
 
-Nếu đã dùng `-PostgreSqlBin` khi khởi động, truyền cùng tham số khi dừng.
-Nếu cổng 5174/8081 bị chiếm, dừng demo cũ hoặc truyền `-UiPort`/`-ApiPort` khác.
-Không commit `.env`, mật khẩu, database, `node_modules` hay `target`.
+Giữ file `.env` để sử dụng lại cấu hình đăng nhập. Không chạy `docker compose down -v` nếu cần giữ dữ liệu. Khi chuyển máy, dữ liệu trong Docker volumes cần được backup/restore riêng.
 
-### Chỉ khởi động frontend
+## Giới thiệu chương trình
 
-```powershell
-cd frontend
-npm.cmd ci
-npm.cmd run dev
-```
+**Bank Transaction & Fraud Monitoring System** là ứng dụng mô phỏng giao dịch ngân hàng và giám sát gian lận, dành cho việc học tập và trình diễn nghiệp vụ. Các giao dịch sử dụng dữ liệu và số dư mô phỏng.
 
+Chương trình hỗ trợ:
 
-## Chatbot hỗ trợ AI
+- Đăng ký, đăng nhập và quản lý tài khoản khách hàng.
+- Chuyển tiền nội bộ, lưu người thụ hưởng và mẫu chuyển tiền.
+- Tra cứu lịch sử giao dịch, tải biên lai PDF và xem biểu đồ dòng tiền.
+- Theo dõi cảnh báo rủi ro, hỗ trợ nhân viên và quản trị viên xử lý nghiệp vụ.
+- Gửi yêu cầu tra soát, nhận thông báo và sử dụng chatbot hỗ trợ; Gemini là tích hợp tùy chọn.
 
-Đã tích hợp khung chat khách hàng với Gemini API ở backend. Xem [cách bật Gemini và giới hạn miễn phí](docs/guides/ai-chatbot.vi.md). Khi chưa cấu hình API key, khung chat dùng hướng dẫn có sẵn và ghi rõ trạng thái.
+Giao diện sử dụng **React và TypeScript**; backend sử dụng **Java 21 và Spring Boot**. **PostgreSQL** lưu dữ liệu, **Redis** hỗ trợ cache và giới hạn request, **Kafka** xử lý sự kiện; **Nginx** phục vụ giao diện trong Docker.
 
-## Đăng ký khách hàng
+## Tài liệu thêm
 
-Chọn **Tạo tài khoản** tại trang đăng nhập. Mỗi đăng ký tạo quyền CUSTOMER và một tài khoản VND số dư 0. Xem [luồng đăng ký](docs/guides/customer-registration.vi.md).
-
-## Biểu đồ tổng quan
-
-Trang Tổng quan có biểu đồ dòng tiền vào/ra và cơ cấu dòng tiền theo 7/30 ngày, dùng số liệu thực của khách hàng. Xem [hướng dẫn biểu đồ](docs/guides/dashboard-charts.vi.md).
+- [Cấu hình Docker, biến môi trường và chuyển sang máy mới](docs/guides/docker-portable.vi.md)
+- [Dữ liệu demo, backup và chia sẻ ứng dụng qua Internet](docs/guides/docker-local.vi.md)
+- [Đăng ký khách hàng](docs/guides/customer-registration.vi.md)
+- [Chatbot AI](docs/guides/ai-chatbot.vi.md)
+- [Biểu đồ tổng quan](docs/guides/dashboard-charts.vi.md)

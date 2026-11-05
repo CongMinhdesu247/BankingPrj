@@ -25,6 +25,7 @@ Trong `features/`, tìm theo nghiệp vụ: `accounts`, `auth`, `beneficiaries`,
 - `shared/api/httpClient.ts` xử lý HTTP chung; `shared/api/selfServiceApi.ts`
   hiện phục vụ nhiều nghiệp vụ như bảo mật, hạn mức và hỗ trợ.
 - UI cơ bản, định dạng, CSV, hook và kiểu API dùng chung nằm trong `shared/`.
+- API nghiệp vụ nằm trong `features/*/api/`; không tạo lớp `src/services/` trùng vai trò.
 - Import trực tiếp file cần dùng; không thêm file gom export chỉ để rút ngắn import.
 - Chỉ tạo thư mục khi có mã thực tế, không thêm `.gitkeep` cho tính năng dự kiến.
 

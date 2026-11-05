@@ -17,9 +17,9 @@
 Mở Docker Desktop, sau đó mở terminal tại thư mục gốc dự án:
 
 ```powershell
-.\Initialize-Docker.ps1
+.\scripts\Initialize-Docker.ps1
 docker compose up -d --build --wait --wait-timeout 300
-pwsh -NoProfile -File .\Seed-DockerDemo.ps1
+pwsh -NoProfile -File .\scripts\Seed-DockerDemo.ps1
 ```
 
 Chỉ chạy Initialize-Docker một lần. Script tạo `.env` với khóa JWT và mật khẩu ngẫu nhiên,
@@ -98,7 +98,7 @@ Lấy dev domain cố định trong https://dashboard.ngrok.com/domains, sau đ�
 tại thư mục gốc BankingPrj (thay URL ví dụ bằng domain thực tế của bạn):
 
 ```powershell
-.\Start-PublicDemo.ps1 -PublicUrl 'https://ten-duoc-cap.ngrok-free.app'
+.\scripts\Start-PublicDemo.ps1 -PublicUrl 'https://ten-duoc-cap.ngrok-free.app'
 ```
 
 Script cập nhật chính xác origin được phép trong `.env`, chờ Docker healthy và mở tunnel.
