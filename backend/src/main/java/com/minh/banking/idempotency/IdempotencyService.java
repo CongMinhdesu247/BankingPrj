@@ -24,8 +24,11 @@ public class IdempotencyService {
     private final Clock clock;
     private final int lockTimeout;
     public IdempotencyService(JdbcTemplate jdbc, JsonMapper json, Clock clock,
-            @Value("${banking.transfer.lock-timeout-ms:2000}") int lockTimeout) {
-        this.jdbc = jdbc; this.json = json; this.clock = clock; this.lockTimeout = lockTimeout;
+        @Value("${banking.transfer.lock-timeout-ms:2000}") int lockTimeout) {
+        this.jdbc = jdbc;
+        this.json = json;
+        this.clock = clock;
+        this.lockTimeout = lockTimeout;
     }
     public record Claim(UUID id, TransactionDetailResponse replay) {}
     private record Payload(UUID source, UUID destination, String amount, String currency, String description) {}
@@ -56,10 +59,10 @@ public class IdempotencyService {
             WHERE actor_id=? AND operation=? AND key=?
             """, (rs, n) -> {
                 if (!hash.equals(rs.getString("request_hash"))) throw new BusinessException(
-                    ErrorCode.IDEMPOTENCY_CONFLICT, "This key has already been used with a different request.");
+                ErrorCode.IDEMPOTENCY_CONFLICT, "This key has already been used with a different request.");
                 String body = rs.getString("response_body");
                 if (body == null || rs.getInt("response_status") != 201) throw new BusinessException(
-                    ErrorCode.IDEMPOTENCY_BUSY, "Request is not complete; retry with the same key.");
+                ErrorCode.IDEMPOTENCY_BUSY, "Request is not complete; retry with the same key.");
                 return new Claim(rs.getObject("id", UUID.class), json.readValue(body, TransactionDetailResponse.class));
             }, actor, OPERATION, key);
     }
@@ -71,8 +74,12 @@ public class IdempotencyService {
         if (changed != 1) throw new IllegalStateException("Idempotency claim was not owned");
     }
     private String hash(Payload payload) {
-        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-            .digest(json.writeValueAsString(payload).getBytes(StandardCharsets.UTF_8))); }
-        catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                .digest(json.writeValueAsString(payload).getBytes(StandardCharsets.UTF_8)));
+        }
+        catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
     }
 }

@@ -1,12 +1,60 @@
 import { request } from './httpClient';
 import type { Page, TransferLimit } from '../types/api';
-export interface Session { id: string; deviceLabel: string; createdAt: string; expiresAt: string; current: boolean }
-export interface Template { id: string; name: string; sourceAccountId: string; destinationAccountId: string; destinationAccountNumber: string; amount: string; description: string | null }
-export interface Ticket { id: string; transactionId: string; reference: string; username: string; subject: string; category: string; status: string; assignedUsername: string | null; version: number; createdAt: string; updatedAt: string }
-export interface TicketDetail { ticket: Ticket; messages: { id: string; author: string; body: string; createdAt: string }[] }
-export interface LimitRequest { id: string; accountId: string; accountNumber: string; username: string; perTransferAmount: string; dailyAmount: string; reason: string; status: string; reviewNote: string | null; createdAt: string }
-export interface LimitSettings { effective: TransferLimit; ceiling: { perTransferAmount: string; dailyAmount: string } }
-export interface LimitChange { accountId: string; perTransferAmount: string; dailyAmount: string; reason: string }
+export interface Session {
+  id: string;
+  deviceLabel: string;
+  createdAt: string;
+  expiresAt: string;
+  current: boolean
+}
+export interface Template {
+  id: string;
+  name: string;
+  sourceAccountId: string;
+  destinationAccountId: string;
+  destinationAccountNumber: string;
+  amount: string;
+  description: string | null
+}
+export interface Ticket {
+  id: string;
+  transactionId: string;
+  reference: string;
+  username: string;
+  subject: string;
+  category: string;
+  status: string;
+  assignedUsername: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string
+}
+export interface TicketDetail {
+  ticket: Ticket;
+  messages: { id: string; author: string; body: string; createdAt: string }[]
+}
+export interface LimitRequest {
+  id: string;
+  accountId: string;
+  accountNumber: string;
+  username: string;
+  perTransferAmount: string;
+  dailyAmount: string;
+  reason: string;
+  status: string;
+  reviewNote: string | null;
+  createdAt: string
+}
+export interface LimitSettings {
+  effective: TransferLimit;
+  ceiling: { perTransferAmount: string; dailyAmount: string }
+}
+export interface LimitChange {
+  accountId: string;
+  perTransferAmount: string;
+  dailyAmount: string;
+  reason: string
+}
 export const selfServiceApi = {
   recoveryOptions: (signal?: AbortSignal) => request<{ deliveryMode: 'LOCAL_MAILBOX' | 'UNAVAILABLE'; localMailboxPath: string | null }>('/auth/recovery-options', { signal, auth: false }),
   security: (signal?: AbortSignal) => request<{ totpEnabled: boolean; recoveryCodesRemaining: number }>('/me/security', { signal }),
@@ -20,7 +68,13 @@ export const selfServiceApi = {
   reset: (token: string, newPassword: string, otp: string) => request<void>('/auth/reset-password', { method: 'POST', auth: false, body: { token, newPassword, otp } }),
   templates: (page: number, signal?: AbortSignal) => request<Page<Template>>(`/me/transfer-templates?page=${page}`, { signal }),
   template: (id: string, signal?: AbortSignal) => request<Template>(`/me/transfer-templates/${encodeURIComponent(id)}`, { signal }),
-  saveTemplate: (body: { name: string; sourceAccountId: string; destinationAccountId: string; amount: string; description: string | null }) => request<Template>('/me/transfer-templates', { method: 'POST', body }),
+  saveTemplate: (body: {
+    name: string;
+    sourceAccountId: string;
+    destinationAccountId: string;
+    amount: string;
+    description: string | null
+  }) => request<Template>('/me/transfer-templates', { method: 'POST', body }),
   deleteTemplate: (id: string) => request<void>(`/me/transfer-templates/${id}`, { method: 'DELETE' }),
   tickets: (staff: boolean, page: number, status: string, signal?: AbortSignal) => request<Page<Ticket>>(`/${staff ? 'staff' : 'me'}/support-tickets?${new URLSearchParams({ page: String(page), status })}`, { signal }),
   ticket: (staff: boolean, id: string, signal?: AbortSignal) => request<TicketDetail>(`/${staff ? 'staff' : 'me'}/support-tickets/${id}`, { signal }),

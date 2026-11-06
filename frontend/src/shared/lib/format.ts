@@ -11,11 +11,16 @@ export function validAmount(value: string): boolean {
 }
 export function dateTime(value: string, dateOnly = false): string {
   return new Intl.DateTimeFormat('vi-VN', {
-    timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
     ...(dateOnly ? {} : { hour: '2-digit', minute: '2-digit' }),
   }).format(new Date(value));
 }
-export function initials(value: string): string { return value.trim().split(/\s+/).slice(-2).map(word => word[0]).join('').toUpperCase(); }
+export function initials(value: string): string {
+  return value.trim().split(/\s+/).slice(-2).map(word => word[0]).join('').toUpperCase();
+}
 export function accountNumber(value: string): string { return value.replace(/(.{4})/g, '$1 ').trim(); }
 export function vietnamDayStart(date: string): string { return new Date(`${date}T00:00:00+07:00`).toISOString(); }
 export function vietnamNextDayStart(date: string): string {

@@ -4,7 +4,7 @@ export function useLoad<T>(loader: (signal: AbortSignal) => Promise<T>, dependen
   const [state, setState] = useState<{ data: T | null; loading: boolean; error: unknown }>({ data: null, loading: true, error: null });
   useEffect(() => {
     const controller = new AbortController();
-    setState({ data: null, loading: true, error: null });
+    setState(previous => ({ data: previous.data, loading: previous.data === null, error: null }));
     Promise.resolve().then(() => loader(controller.signal)).then(data => { if (!controller.signal.aborted) setState({ data, loading: false, error: null }); })
       .catch(error => { if (!controller.signal.aborted) setState({ data: null, loading: false, error }); });
     return () => controller.abort();

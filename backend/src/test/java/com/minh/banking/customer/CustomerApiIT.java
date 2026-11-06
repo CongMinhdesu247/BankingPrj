@@ -58,7 +58,7 @@ class CustomerApiIT {
         flyway.validate();
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         assertThat(jdbc.queryForObject("select count(*) from flyway_schema_history where success", Integer.class))
-            .isEqualTo(4);
+        .isEqualTo(4);
     }
 
     @Test
@@ -148,9 +148,9 @@ class CustomerApiIT {
     @Test
     void databaseRejectsUnnormalizedEmailAndUnknownAccountOwner() {
         assertThatThrownBy(() -> jdbc.update("insert into customers(customer_code,full_name,email) values ('BAD','A','UPPER@example.com')"))
-            .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertThatThrownBy(() -> jdbc.update("insert into accounts(customer_id,account_number) values (?, 'MISSING')", UUID.randomUUID()))
-            .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     String customer(String code, String email) {
@@ -159,11 +159,11 @@ class CustomerApiIT {
 
     HttpRequest httpRequest(String method, String path, String body) {
         return HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/v1/customers" + path))
-            .timeout(java.time.Duration.ofSeconds(10))
-            .header("Content-Type", "application/json").header("X-Request-Id", "customer-it")
-            .header("Authorization", testUsers.staff())
-            .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body))
-            .build();
+        .timeout(java.time.Duration.ofSeconds(10))
+        .header("Content-Type", "application/json").header("X-Request-Id", "customer-it")
+        .header("Authorization", testUsers.staff())
+        .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body))
+        .build();
     }
 
     HttpResponse<String> request(String method, String path, String body) throws Exception {

@@ -1,12 +1,30 @@
 .registration-shell { min-height: 100dvh; display: grid; place-items: center; padding: 36px 20px; background: radial-gradient(ellipse at top left, #f8eaf0, #f3f6fa 60%); }
-.registration-panel { width: min(100%, 680px); padding: 32px; }.registration-panel > .brand-link { display: inline-block; margin-bottom: 22px; }
-.registration-heading h1 { margin: 10px 0 8px; font-size: clamp(24px, 3vw, 30px); }.registration-heading p { color: var(--muted); margin: 0 0 18px; }
-.registration-demo-note { font-size: 13px; }.registration-fields { padding: 0; border: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.registration-fields label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }.registration-fields input { width: 100%; min-width: 0; padding: 11px 12px; font: inherit; font-size: 15px; }
-.registration-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }.registration-fields .field-help { margin: -7px 0 0; font-size: 12px; color: var(--muted); }
-.registration-password { position: relative; margin-top: -8px; }.registration-password input { padding-right: 52px; }.registration-password button { position: absolute; right: 5px; top: 3px; }
-.registration-submit { width: 100%; margin-top: 6px; }.registration-login { text-align: center; margin: 20px 0 0; }
-.registration-success > svg { color: #1c7955; }.registration-success h1 { margin-top: 15px; }.registration-success dl { margin: 24px 0; padding: 16px 20px; background: #f3f6fa; border-radius: 12px; }.registration-success dl div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin: 8px 0; }.registration-success dd { font-weight: 600; overflow-wrap: anywhere; margin: 0; }
+.registration-panel { width: min(100%, 680px); padding: 32px; }
+.registration-panel > .brand-link { display: inline-block; margin-bottom: 22px; }
+.registration-heading h1 { margin: 10px 0 8px; font-size: clamp(24px, 3vw, 30px); }
+.registration-heading p { color: var(--muted); margin: 0 0 18px; }
+.registration-demo-note { font-size: 13px; }
+.registration-fields { padding: 0; border: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.registration-fields label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+.registration-fields input { width: 100%; min-width: 0; padding: 11px 12px; font: inherit; font-size: 15px; }
+.registration-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.registration-fields .field-help { margin: -7px 0 0; font-size: 12px; color: var(--muted); }
+.registration-password { position: relative; margin-top: -8px; }
+.registration-password input { padding-right: 52px; }
+.registration-password button { position: absolute; right: 5px; top: 3px; }
+.registration-submit { width: 100%; margin-top: 6px; }
+.registration-login { text-align: center; margin: 20px 0 0; }
+.registration-success > svg { color: #1c7955; }
+.registration-success h1 { margin-top: 15px; }
+.registration-success dl { margin: 24px 0; padding: 16px 20px; background: #f3f6fa; border-radius: 12px; }
+.registration-success dl div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin: 8px 0; }
+.registration-success dd { font-weight: 600; overflow-wrap: anywhere; margin: 0; }
 .registration-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
-.login-registration-link { text-align: center; margin: 18px 0; font-size: 14px; }.login-registration-link a { margin-left: 5px; }
-@media (max-width: 600px) { .registration-shell { padding: 18px 12px; }.registration-panel { padding: 22px 18px; }.registration-row { grid-template-columns: 1fr; gap: 12px; }.registration-fields input { font-size: 16px; } }
+.login-registration-link { text-align: center; margin: 18px 0; font-size: 14px; }
+.login-registration-link a { margin-left: 5px; }
+@media (max-width: 600px) {
+  .registration-shell { padding: 18px 12px; }
+  .registration-panel { padding: 22px 18px; }
+  .registration-row { grid-template-columns: 1fr; gap: 12px; }
+  .registration-fields input { font-size: 16px; }
+}

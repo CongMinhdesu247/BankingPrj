@@ -16,18 +16,22 @@ public class TransactionController {
     private final com.minh.banking.security.OwnershipService ownership;
     private final com.minh.banking.account.service.AccountService accounts;
     public TransactionController(TransactionQueryService service, com.minh.banking.security.OwnershipService ownership,
-            com.minh.banking.account.service.AccountService accounts) {
-        this.service = service; this.ownership = ownership; this.accounts = accounts;
+        com.minh.banking.account.service.AccountService accounts) {
+        this.service = service;
+        this.ownership = ownership;
+        this.accounts = accounts;
     }
 
     @GetMapping("/transactions/{id}")
-    public TransactionDetailResponse get(@PathVariable UUID id) { return ownership.filterDetail(service.get(id)); }
+    public TransactionDetailResponse get(@PathVariable UUID id) {
+        return ownership.filterDetail(service.get(id));
+    }
 
     @GetMapping("/accounts/{id}/transactions")
     public PageResponse<TransactionResponse> history(@PathVariable UUID id,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
-            @RequestParam(required = false) Instant from, @RequestParam(required = false) Instant to) {
+        @RequestParam(defaultValue = "0") @Min(0) int page,
+        @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+        @RequestParam(required = false) Instant from, @RequestParam(required = false) Instant to) {
         ownership.requireCustomer(accounts.get(id).customerId(), com.minh.banking.common.exception.ErrorCode.ACCOUNT_NOT_FOUND);
         return service.history(id, page, size, from, to);
     }

@@ -47,7 +47,8 @@ export function VndInput({ value, onValueChange, ...props }: Props) {
     const validPaste = /^\d*$/.test(pasted) || /^\d{1,3}(\.\d{3})+$/.test(pasted);
     // Validate the clipboard independently; a decimal paste must never silently become a different amount.
     const next = validPaste && /^\d*$/.test(value)
-      ? (before + pasted + after).replace(/\./g, '') : before + pasted + after;
+      ? (before + pasted + after).replace(/\./g, '')
+      : before + pasted + after;
     commit(next, digitsIn(before + pasted), before.length + pasted.length);
   }
   function keyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -61,5 +62,13 @@ export function VndInput({ value, onValueChange, ...props }: Props) {
     const index = backward ? before - 1 : before;
     commit(value.slice(0, index) + value.slice(index + 1), backward ? before - 1 : before, position);
   }
-  return <input {...props} ref={inputRef} type="text" inputMode="numeric" value={formatVndInput(value)} onChange={change} onPaste={paste} onKeyDown={keyDown} />;
+  return <input
+    {...props}
+    ref={inputRef}
+    type="text"
+    inputMode="numeric"
+    value={formatVndInput(value)}
+    onChange={change}
+    onPaste={paste}
+    onKeyDown={keyDown} />;
 }

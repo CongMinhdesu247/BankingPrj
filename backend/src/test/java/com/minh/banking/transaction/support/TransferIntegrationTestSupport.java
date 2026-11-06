@@ -17,8 +17,8 @@ import static org.assertj.core.api.Assertions.*;
 import static com.minh.banking.transaction.support.BankingTestFixtures.FixtureWriter.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-    "spring.config.import=", "banking.transfer.lock-timeout-ms=700"
-})
+        "spring.config.import=", "banking.transfer.lock-timeout-ms=700"
+    })
 @Import({BankingTestFixtures.class, com.minh.banking.security.support.SecurityTestUsers.Config.class})
 public abstract class TransferIntegrationTestSupport {
     @LocalServerPort protected int port;
@@ -55,21 +55,21 @@ public abstract class TransferIntegrationTestSupport {
 
     protected String payload(UUID source, UUID destination, String amount) {
         return "{\"sourceAccountId\":\"" + source + "\",\"destinationAccountId\":\"" + destination
-            + "\",\"amount\":\"" + amount + "\",\"currency\":\"VND\",\"description\":\"Demo transfer\"}";
+        + "\",\"amount\":\"" + amount + "\",\"currency\":\"VND\",\"description\":\"Demo transfer\"}";
     }
 
     protected HttpRequest httpRequest(String method, String path, String body) {
         return HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1" + path))
-            .timeout(Duration.ofSeconds(12)).header("Content-Type", "application/json")
-            .header("X-Request-Id", "transfer-it")
-            .header("Idempotency-Key", UUID.randomUUID().toString())
-            .header("Authorization", authorizationFor(path))
-            .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build();
+        .timeout(Duration.ofSeconds(12)).header("Content-Type", "application/json")
+        .header("X-Request-Id", "transfer-it")
+        .header("Idempotency-Key", UUID.randomUUID().toString())
+        .header("Authorization", authorizationFor(path))
+        .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build();
     }
 
     protected String authorizationFor(String path) {
         return path.startsWith("/customers") || path.endsWith("/status")
-            ? testUsers.staff() : testUsers.customer(SOURCE);
+        ? testUsers.staff() : testUsers.customer(SOURCE);
     }
 
     protected HttpResponse<String> request(String method, String path, String body) throws Exception {
@@ -86,9 +86,9 @@ public abstract class TransferIntegrationTestSupport {
 
     protected void assertBalances(String source, String destination) {
         assertThat(jdbc.queryForObject("select balance from accounts where id=?", java.math.BigDecimal.class, SOURCE))
-            .isEqualByComparingTo(source);
+        .isEqualByComparingTo(source);
         assertThat(jdbc.queryForObject("select balance from accounts where id=?", java.math.BigDecimal.class, DESTINATION))
-            .isEqualByComparingTo(destination);
+        .isEqualByComparingTo(destination);
     }
 
     protected List<Map<String, Object>> accountSnapshot() {
@@ -97,7 +97,7 @@ public abstract class TransferIntegrationTestSupport {
 
     protected void assertLedgerConsistent(int completedTransfers) {
         assertThat(jdbc.queryForObject("select count(*) from transactions where type='INTERNAL_TRANSFER'", Integer.class))
-            .isEqualTo(completedTransfers);
+        .isEqualTo(completedTransfers);
         assertThat(jdbc.queryForObject("""
             select count(*) from (
                 select t.id from transactions t left join transaction_entries e on e.transaction_id=t.id
@@ -115,6 +115,6 @@ public abstract class TransferIntegrationTestSupport {
                  from transaction_entries e where e.account_id=a.id),0))
             """, Integer.class, TREASURY)).isZero();
         assertThat(jdbc.queryForObject("select sum(balance) from accounts", java.math.BigDecimal.class))
-            .isEqualByComparingTo(RESERVE);
+        .isEqualByComparingTo(RESERVE);
     }
 }

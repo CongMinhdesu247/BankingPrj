@@ -7,28 +7,229 @@ import { dateTime, money } from '../../../shared/lib/format';
 import { selfServiceApi as api } from '../../../shared/api/selfServiceApi';
 import { transactionApi } from '../../transfers/api/transactionApi';
 import { TicketStatusBadge, ticketStatusLabels as statuses } from '../components/TicketStatusBadge';
-function useSupportScope() { const { me } = useAuth(); const staff = !me!.user.roles.includes('CUSTOMER'); return { staff, base: staff ? '/staff/support' : '/support' }; }
+function useSupportScope() {
+  const { me } = useAuth();
+  const staff = !me!.user.roles.includes('CUSTOMER');
+  return { staff, base: staff ? '/staff/support' : '/support' };
+}
 export function SupportPage() {
-  const { staff, base } = useSupportScope(); const [query] = useSearchParams(); const navigate = useNavigate();
+  const { staff, base } = useSupportScope();
+  const [query] = useSearchParams();
+  const navigate = useNavigate();
   const [page, setPage] = useState(0), [status, setStatus] = useState('');
-  const [transaction, setTransaction] = useState(query.get('transaction') ?? ''), [subject, setSubject] = useState(''), [category, setCategory] = useState('OTHER'), [message, setMessage] = useState('');
+  const [transaction, setTransaction] = useState(query.get('transaction') ?? ''),
+    [subject, setSubject] = useState(''),
+    [category, setCategory] = useState('OTHER'),
+    [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState<unknown>();
   const load = useLoad(signal => api.tickets(staff, page, status, signal), [staff, page, status]);
   const recent = useLoad(signal => !staff ? transactionApi.history({ size: 100 }, signal) : Promise.resolve(null), [staff]);
-  const selected = useLoad(signal => !staff && query.get('transaction') ? transactionApi.detail(query.get('transaction')!, signal) : Promise.resolve(null), [staff, query.get('transaction')]);
-  async function create(event: FormEvent) { event.preventDefault(); if (busy) return; setBusy(true); setError(undefined); try { const detail = await api.createTicket({ transactionId: transaction, subject: subject.trim(), category, message: message.trim() }); navigate(`${base}/${detail.ticket.id}`); } catch (reason) { setError(reason); } finally { setBusy(false); } }
+  const selected = useLoad(signal => !staff && query.get('transaction')
+    ? transactionApi.detail(query.get('transaction')!, signal)
+    : Promise.resolve(null), [staff, query.get('transaction')]);
+  async function create(event: FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(undefined);
+    try {
+      const detail = await api.createTicket({ transactionId: transaction, subject: subject.trim(), category, message: message.trim() });
+      navigate(`${base}/${detail.ticket.id}`);
+    }
+    catch (reason) { setError(reason); }
+    finally { setBusy(false); }
+  }
   const choices = recent.data?.content.filter(t => t.type === 'INTERNAL_TRANSFER') ?? [];
   if (selected.data?.transaction.type === 'INTERNAL_TRANSFER' && !choices.some(t => t.id === selected.data!.transaction.id)) choices.unshift(selected.data.transaction);
-  return <><div className="page-heading"><div><span className="eyebrow">ĐỒNG HÀNH CÙNG KHÁCH HÀNG</span><h1>{staff ? 'Xử lý tra soát' : 'Tra soát & hỗ trợ'}</h1><p>Theo dõi yêu cầu, trao đổi và kết quả xử lý gắn với từng giao dịch.</p></div><Button className="secondary" onClick={load.reload}>Làm mới</Button></div>
-    {!staff && <section className="panel"><h2>Gửi yêu cầu tra soát giao dịch</h2><p className="subtle-note">Gửi yêu cầu không tự hủy hoặc hoàn tiền giao dịch. Nhân viên sẽ đối chiếu và phản hồi tại đây.</p><ErrorBanner error={recent.error} retry={recent.reload} /><ErrorBanner error={selected.error} retry={selected.reload} /><form className="service-form" onSubmit={create}><label>Giao dịch cần hỗ trợ<select required value={transaction} onChange={e => setTransaction(e.target.value)}><option value="">Chọn giao dịch gần đây</option>{choices.map(t => <option key={t.id} value={t.id}>{t.reference} · {money(t.amount)}</option>)}</select></label><p className="subtle-note">Danh sách gồm 100 giao dịch gần nhất. Với giao dịch cũ hơn, mở từ lịch sử rồi chọn “Yêu cầu tra soát”.</p><label>Loại yêu cầu<select value={category} onChange={e => setCategory(e.target.value)}><option value="OTHER">Cần kiểm tra / hỗ trợ khác</option><option value="WRONG_RECIPIENT">Chuyển nhầm người nhận</option><option value="UNRECOGNIZED">Không nhận ra giao dịch</option></select></label><label>Tiêu đề<input required maxLength={120} value={subject} onChange={e => setSubject(e.target.value)} /></label><label>Mô tả vấn đề<textarea required maxLength={2000} rows={3} value={message} onChange={e => setMessage(e.target.value)} /></label><ErrorBanner error={error} /><Button type="submit" className="primary" loading={busy}>Gửi yêu cầu tra soát</Button></form></section>}
-    <section className="panel risk-section"><div className="section-heading"><h2>{staff ? 'Hàng đợi yêu cầu' : 'Yêu cầu của bạn'}</h2><label>Lọc trạng thái<select value={status} onChange={e => { setStatus(e.target.value); setPage(0); }}><option value="">Tất cả</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div><div className="ticket-status-legend" aria-label="Các trạng thái tra soát">{Object.keys(statuses).map(value => <TicketStatusBadge key={value} status={value} />)}</div><ErrorBanner error={load.error} retry={load.reload} />{load.loading ? <Loading /> : load.data?.content.length ? <><div className="risk-table-wrap"><table className="risk-table support-ticket-table"><thead><tr><th>Yêu cầu / Giao dịch</th>{staff && <th>Khách hàng</th>}<th>Trạng thái</th><th>Phụ trách</th><th>Cập nhật</th></tr></thead><tbody>{load.data.content.map(ticket => <tr key={ticket.id}><td data-label="Yêu cầu / Giao dịch"><Link className="text-link" to={`${base}/${ticket.id}`}>{ticket.subject}</Link><small className="statement-description">{ticket.reference}</small></td>{staff && <td data-label="Khách hàng">{ticket.username}</td>}<td data-label="Trạng thái"><TicketStatusBadge status={ticket.status} /></td><td data-label="Phụ trách">{ticket.assignedUsername ?? 'Chờ tiếp nhận'}</td><td data-label="Cập nhật">{dateTime(ticket.updatedAt)}</td></tr>)}</tbody></table></div><Pagination {...load.data} onChange={setPage} /></> : !load.error && <EmptyState title="Chưa có yêu cầu phù hợp" description="Các yêu cầu tra soát sẽ được cập nhật tại đây." />}</section></>;
+  return <>
+    <div className="page-heading">
+      <div>
+        <span className="eyebrow">ĐỒNG HÀNH CÙNG KHÁCH HÀNG</span>
+        <h1>{staff ? 'Xử lý tra soát' : 'Tra soát & hỗ trợ'}</h1>
+        <p>Theo dõi yêu cầu, trao đổi và kết quả xử lý gắn với từng giao dịch.</p>
+      </div>
+      <Button className="secondary" onClick={load.reload}>Làm mới</Button>
+    </div>
+    {!staff &&
+      <section className="panel">
+        <h2>Gửi yêu cầu tra soát giao dịch</h2>
+        <p className="subtle-note">Gửi yêu cầu không tự hủy hoặc hoàn tiền giao dịch. Nhân viên sẽ đối chiếu và phản hồi tại đây.</p>
+        <ErrorBanner error={recent.error} retry={recent.reload} />
+        <ErrorBanner error={selected.error} retry={selected.reload} />
+        <form className="service-form" onSubmit={create}>
+          <label>Giao dịch cần hỗ trợ<select required value={transaction} onChange={e => setTransaction(e.target.value)}>
+            <option value="">Chọn giao dịch gần đây</option>
+            {choices.map(t => <option key={t.id} value={t.id}>{t.reference} · {money(t.amount)}</option>)}
+          </select></label>
+          <p className="subtle-note">Danh sách gồm 100 giao dịch gần nhất. Với giao dịch cũ hơn, mở từ lịch sử rồi chọn “Yêu cầu tra soát”.</p>
+          <label>Loại yêu cầu<select value={category} onChange={e => setCategory(e.target.value)}>
+            <option value="OTHER">Cần kiểm tra / hỗ trợ khác</option>
+            <option value="WRONG_RECIPIENT">Chuyển nhầm người nhận</option>
+            <option value="UNRECOGNIZED">Không nhận ra giao dịch</option>
+          </select></label>
+          <label>Tiêu đề<input required maxLength={120} value={subject} onChange={e => setSubject(e.target.value)} /></label>
+          <label>Mô tả vấn đề<textarea required maxLength={2000} rows={3} value={message} onChange={e => setMessage(e.target.value)} /></label>
+          <ErrorBanner error={error} />
+          <Button type="submit" className="primary" loading={busy}>Gửi yêu cầu tra soát</Button>
+        </form>
+      </section>}
+    <section className="panel risk-section">
+      <div className="section-heading">
+        <h2>{staff ? 'Hàng đợi yêu cầu' : 'Yêu cầu của bạn'}</h2>
+        <label>Lọc trạng thái<select value={status} onChange={e => {
+          setStatus(e.target.value);
+          setPage(0);
+        }}>
+          <option value="">Tất cả</option>
+          {Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+        </select></label>
+      </div>
+      <div className="ticket-status-legend" aria-label="Các trạng thái tra soát">
+        {Object.keys(statuses).map(value => <TicketStatusBadge key={value} status={value} />)}
+      </div>
+      <ErrorBanner error={load.error} retry={load.reload} />
+      {load.loading
+        ? <Loading />
+        : load.data?.content.length
+          ? <>
+            <div className="risk-table-wrap">
+              <table className="risk-table support-ticket-table">
+                <thead>
+                  <tr>
+                    <th>Yêu cầu / Giao dịch</th>
+                    {staff && <th>Khách hàng</th>}
+                    <th>Trạng thái</th>
+                    <th>Phụ trách</th>
+                    <th>Cập nhật</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {load.data.content.map(ticket =>
+                    <tr key={ticket.id}>
+                      <td data-label="Yêu cầu / Giao dịch">
+                        <Link className="text-link" to={`${base}/${ticket.id}`}>{ticket.subject}</Link>
+                        <small className="statement-description">{ticket.reference}</small>
+                      </td>
+                      {staff && <td data-label="Khách hàng">{ticket.username}</td>}
+                      <td data-label="Trạng thái"><TicketStatusBadge status={ticket.status} /></td>
+                      <td data-label="Phụ trách">{ticket.assignedUsername ?? 'Chờ tiếp nhận'}</td>
+                      <td data-label="Cập nhật">{dateTime(ticket.updatedAt)}</td>
+                    </tr>)}
+                </tbody>
+              </table>
+            </div>
+            <Pagination {...load.data} onChange={setPage} />
+          </>
+          : !load.error &&
+          <EmptyState title="Chưa có yêu cầu phù hợp" description="Các yêu cầu tra soát sẽ được cập nhật tại đây." />}
+    </section>
+  </>;
 }
 export function SupportDetailPage() {
-  const { staff, base } = useSupportScope(); const { id = '' } = useParams(); const location = useLocation();
+  const { staff, base } = useSupportScope();
+  const { id = '' } = useParams();
+  const location = useLocation();
   const load = useLoad(signal => api.ticket(staff, id, signal), [staff, id, location.key]);
-  const [message, setMessage] = useState(''), [error, setError] = useState<unknown>(), [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
-  async function act(action: () => Promise<unknown>) { if (busy) return; setBusy(true); setError(undefined); setNotice(''); try { await action(); setMessage(''); setNotice('Đã cập nhật yêu cầu.'); load.reload(); } catch (reason) { setError(reason); } finally { setBusy(false); } }
+  const [message, setMessage] = useState(''),
+    [error, setError] = useState<unknown>(),
+    [busy, setBusy] = useState(false),
+    [notice, setNotice] = useState('');
+  async function act(action: () => Promise<unknown>) {
+    if (busy) return;
+    setBusy(true);
+    setError(undefined);
+    setNotice('');
+    try {
+      await action();
+      setMessage('');
+      setNotice('Đã cập nhật yêu cầu.');
+      load.reload();
+    }
+    catch (reason) { setError(reason); }
+    finally { setBusy(false); }
+  }
   const ticket = load.data?.ticket;
-  return <><Link className="text-link" to={base}>← Danh sách tra soát</Link><div className="page-heading"><div><h1>Chi tiết yêu cầu</h1><p>Trao đổi được lưu cùng hồ sơ xử lý.</p></div><Button className="secondary" onClick={load.reload}>Làm mới</Button></div><ErrorBanner error={load.error} retry={load.reload} /><ErrorBanner error={error} />{notice && <p className="notice info" role="status">{notice}</p>}{load.loading ? <Loading /> : ticket && <><section className="panel"><h2>{ticket.subject}</h2><dl className="risk-facts"><div><dt>Trạng thái</dt><dd><TicketStatusBadge status={ticket.status} /></dd></div><div><dt>Người phụ trách</dt><dd>{ticket.assignedUsername ?? 'Chờ tiếp nhận'}</dd></div><div><dt>Giao dịch</dt><dd><Link className="text-link" to={`${staff ? '/staff/transactions' : '/transactions'}/${ticket.transactionId}`}>{ticket.reference}</Link></dd></div><div><dt>Mã hồ sơ</dt><dd className="reference-value">{ticket.id}</dd></div></dl><p className="subtle-note">Kết quả tra soát không tự phát sinh hoàn tiền.</p></section>
-      <section className="panel risk-section"><h2>Lịch sử trao đổi</h2><div className="support-thread">{load.data!.messages.map(item => <article className="support-message" key={item.id}><div><strong>{item.author}</strong><small>{dateTime(item.createdAt)}</small></div><p>{item.body}</p></article>)}</div>{ticket.status !== 'CLOSED' && <form className="service-form" onSubmit={e => { e.preventDefault(); void act(() => api.reply(staff, id, message.trim())); }}><label>{staff ? 'Nội dung phản hồi / kết quả đối chiếu' : 'Bổ sung thông tin'}<textarea required disabled={busy} maxLength={2000} rows={4} value={message} onChange={e => setMessage(e.target.value)} /></label><div className="button-row"><Button type="submit" className="primary" loading={busy} disabled={!message.trim()}>Gửi phản hồi</Button>{staff && <><Button className="secondary" disabled={busy || ticket.status === 'IN_PROGRESS'} onClick={() => void act(() => api.updateTicket(true, id, ticket.version, 'IN_PROGRESS', ''))}>Nhận xử lý</Button><Button className="secondary" disabled={busy || !message.trim()} onClick={() => void act(() => api.updateTicket(true, id, ticket.version, 'RESOLVED', message.trim()))}>Gửi kết quả xử lý</Button></>}{!staff && ticket.status === 'RESOLVED' && <Button className="secondary" disabled={busy} onClick={() => void act(() => api.updateTicket(false, id, ticket.version, 'CLOSED', ''))}>Đồng ý kết quả và đóng yêu cầu</Button>}</div></form>}</section></>}</>;
+  return <>
+    <Link className="text-link" to={base}>← Danh sách tra soát</Link>
+    <div className="page-heading">
+      <div>
+        <h1>Chi tiết yêu cầu</h1>
+        <p>Trao đổi được lưu cùng hồ sơ xử lý.</p>
+      </div>
+      <Button className="secondary" onClick={load.reload}>Làm mới</Button>
+    </div>
+    <ErrorBanner error={load.error} retry={load.reload} />
+    <ErrorBanner error={error} />
+    {notice && <p className="notice info" role="status">{notice}</p>}
+    {load.loading
+      ? <Loading />
+      : ticket &&
+      <>
+        <section className="panel">
+          <h2>{ticket.subject}</h2>
+          <dl className="risk-facts">
+            <div>
+              <dt>Trạng thái</dt>
+              <dd><TicketStatusBadge status={ticket.status} /></dd>
+            </div>
+            <div>
+              <dt>Người phụ trách</dt>
+              <dd>{ticket.assignedUsername ?? 'Chờ tiếp nhận'}</dd>
+            </div>
+            <div>
+              <dt>Giao dịch</dt>
+              <dd>
+                <Link className="text-link" to={`${staff ? '/staff/transactions' : '/transactions'}/${ticket.transactionId}`}>
+                  {ticket.reference}
+                </Link>
+              </dd>
+            </div>
+            <div>
+              <dt>Mã hồ sơ</dt>
+              <dd className="reference-value">{ticket.id}</dd>
+            </div>
+          </dl>
+          <p className="subtle-note">Kết quả tra soát không tự phát sinh hoàn tiền.</p>
+        </section>
+        <section className="panel risk-section">
+          <h2>Lịch sử trao đổi</h2>
+          <div className="support-thread">
+            {load.data!.messages.map(item =>
+              <article className="support-message" key={item.id}>
+                <div>
+                  <strong>{item.author}</strong>
+                  <small>{dateTime(item.createdAt)}</small>
+                </div>
+                <p>{item.body}</p>
+              </article>)}
+          </div>
+          {ticket.status !== 'CLOSED' &&
+            <form className="service-form" onSubmit={e => {
+              e.preventDefault();
+              void act(() => api.reply(staff, id, message.trim()));
+            }}>
+              <label>
+                {staff ? 'Nội dung phản hồi / kết quả đối chiếu' : 'Bổ sung thông tin'}
+                <textarea
+                  required
+                  disabled={busy}
+                  maxLength={2000}
+                  rows={4}
+                  value={message}
+                  onChange={e => setMessage(e.target.value)} />
+              </label>
+              <div className="button-row">
+                <Button type="submit" className="primary" loading={busy} disabled={!message.trim()}>Gửi phản hồi</Button>
+                {staff &&
+                  <>
+                    <Button className="secondary" disabled={busy || ticket.status === 'IN_PROGRESS'} onClick={() => void act(() => api.updateTicket(true, id, ticket.version, 'IN_PROGRESS', ''))}>Nhận xử lý</Button>
+                    <Button className="secondary" disabled={busy || !message.trim()} onClick={() => void act(() => api.updateTicket(true, id, ticket.version, 'RESOLVED', message.trim()))}>Gửi kết quả xử lý</Button>
+                  </>}
+                {!staff && ticket.status === 'RESOLVED' &&
+                  <Button className="secondary" disabled={busy} onClick={() => void act(() => api.updateTicket(false, id, ticket.version, 'CLOSED', ''))}>Đồng ý kết quả và đóng yêu cầu</Button>}
+              </div>
+            </form>}
+        </section>
+      </>}
+  </>;
 }

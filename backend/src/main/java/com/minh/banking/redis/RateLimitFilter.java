@@ -17,11 +17,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException,IOException {
         try {
             if (request.getMethod().equals("POST")) {
-                if (request.getServletPath().startsWith("/api/v1/auth/") || request.getServletPath().startsWith("/api/v1/me/security/")) {
+                var authentication=SecurityContextHolder.getContext().getAuthentication();
+                if (request.getServletPath().startsWith("/api/v1/auth/")) {
                     // server.forward-headers-strategy=none: never trust caller-supplied X-Forwarded-For.
                     limits.check("login",request.getRemoteAddr());
+                } else if (request.getServletPath().startsWith("/api/v1/me/security/")
+                        && !request.getServletPath().equals("/api/v1/me/security/logout")) {
+                    String actor=authentication!=null && authentication.getPrincipal() instanceof BankingPrincipal principal
+                        ? principal.id().toString() : request.getRemoteAddr();
+                    limits.check("login",actor);
                 } else if (request.getServletPath().equals("/api/v1/transfers")) {
-                    var authentication=SecurityContextHolder.getContext().getAuthentication();
                     if (authentication!=null && authentication.getPrincipal() instanceof BankingPrincipal principal && principal.isCustomer())
                         limits.check("transfer",principal.id().toString());
                 }

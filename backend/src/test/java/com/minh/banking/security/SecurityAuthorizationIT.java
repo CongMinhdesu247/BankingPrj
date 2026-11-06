@@ -22,8 +22,8 @@ class SecurityAuthorizationIT extends TransferIntegrationTestSupport {
     @Test
     void everyExistingBusinessRouteRequiresBearerAuthentication() throws Exception {
         for (String path : List.of("/me", "/me/accounts", "/me/transactions", "/customers", "/accounts/" + SOURCE,
-                "/customers/" + owner() + "/accounts", "/accounts/" + SOURCE + "/transactions",
-                "/transactions/" + UUID.randomUUID(), "/users", "/roles")) {
+            "/customers/" + owner() + "/accounts", "/accounts/" + SOURCE + "/transactions",
+            "/transactions/" + UUID.randomUUID(), "/users", "/roles")) {
             var response = as(null, "GET", path, null);
             assertError(response, 401, "UNAUTHENTICATED");
             assertThat(response.headers().firstValue("WWW-Authenticate")).contains("Bearer");
@@ -192,9 +192,9 @@ class SecurityAuthorizationIT extends TransferIntegrationTestSupport {
     void signedRoleClaimsCannotEscalateDatabaseCustomerToAdmin() throws Exception {
         UUID customer = testUsers.ensure(RoleCode.CUSTOMER, owner());
         // Keep a valid registered session so this checks role authority, independently of session admission.
-        UUID session=UUID.randomUUID();
-        jdbc.update("INSERT INTO auth_sessions(id,user_id,expires_at) VALUES (?,?,now()+interval '15 minutes')",session,customer);
-        String forgedRole = mint(customer, Map.of("roles", List.of("ADMIN"),"jti",session.toString()), Set.of());
+        UUID session = UUID.randomUUID();
+        jdbc.update("INSERT INTO auth_sessions(id,user_id,expires_at) VALUES (?,?,now()+interval '15 minutes')", session, customer);
+        String forgedRole = mint(customer, Map.of("roles", List.of("ADMIN"), "jti", session.toString()), Set.of());
         assertError(as(forgedRole, "GET", "/users", null), 403, "FORBIDDEN");
         assertThat(as(forgedRole, "GET", "/me/accounts", null).statusCode()).isEqualTo(200);
     }
@@ -214,12 +214,14 @@ class SecurityAuthorizationIT extends TransferIntegrationTestSupport {
         }
     }
 
-    private UUID owner() { return jdbc.queryForObject("select customer_id from accounts where id=?", UUID.class, SOURCE); }
+    private UUID owner() {
+        return jdbc.queryForObject("select customer_id from accounts where id=?", UUID.class, SOURCE);
+    }
     private record Other(UUID customer, UUID account) {}
     private Other otherCustomer() {
         UUID customer = UUID.randomUUID(), account = UUID.randomUUID();
-        jdbc.update("insert into customers(id,customer_code,full_name) values (?,?,?)", customer, "OTHER_" + customer.toString().substring(0,8), "Other Customer");
-        jdbc.update("insert into accounts(id,customer_id,account_number) values (?,?,?)", account, customer, "OTHER_" + account.toString().substring(0,8));
+        jdbc.update("insert into customers(id,customer_code,full_name) values (?,?,?)", customer, "OTHER_" + customer.toString().substring(0, 8), "Other Customer");
+        jdbc.update("insert into accounts(id,customer_id,account_number) values (?,?,?)", account, customer, "OTHER_" + account.toString().substring(0, 8));
         fixtures.allocate(account, new BigDecimal("500000.00"));
         return new Other(customer, account);
     }
@@ -228,17 +230,17 @@ class SecurityAuthorizationIT extends TransferIntegrationTestSupport {
     }
     private HttpResponse<String> as(String authorization, String method, String path, String body) throws Exception {
         var builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1" + path))
-            .timeout(java.time.Duration.ofSeconds(12)).header("Content-Type", "application/json").header("X-Request-Id", "transfer-it");
+        .timeout(java.time.Duration.ofSeconds(12)).header("Content-Type", "application/json").header("X-Request-Id", "transfer-it");
         if (authorization != null) builder.header("Authorization", authorization);
-        if (method.equals("POST") && path.equals("/transfers")) builder.header("Idempotency-Key",UUID.randomUUID().toString());
+        if (method.equals("POST") && path.equals("/transfers")) builder.header("Idempotency-Key", UUID.randomUUID().toString());
         return http.send(builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(),
             HttpResponse.BodyHandlers.ofString());
     }
     private String mint(UUID id, Map<String, Object> changed, Set<String> removed) {
         Instant now = Instant.now();
         var claims = JwtClaimsSet.builder().issuer("banking-local").subject(id.toString()).issuedAt(now)
-            .notBefore(now).expiresAt(now.plusSeconds(900)).audience(List.of("banking-api"))
-            .claims(values -> { values.putAll(changed); removed.forEach(values::remove); }).build();
+        .notBefore(now).expiresAt(now.plusSeconds(900)).audience(List.of("banking-api"))
+        .claims(values -> { values.putAll(changed); removed.forEach(values::remove); }).build();
         return "Bearer " + encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();
     }
 }

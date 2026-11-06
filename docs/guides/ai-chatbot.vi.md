@@ -7,12 +7,12 @@ Không tự thực hiện giao dịch và không truy vấn dữ liệu tài kho
 ## Bật Gemini API qua Docker
 
 1. Tạo API key tại https://aistudio.google.com/api-keys bằng tài khoản của bạn.
-2. Kiểm tra model và hạn mức Free Tier của dự án Google AI Studio. Mặc định dùng gemini-3.5-flash-lite; có thể đổi GEMINI_MODEL theo model tài khoản được phép dùng.
+2. Kiểm tra model và hạn mức Free Tier của dự án Google AI Studio. Mặc định dùng gemini-2.5-flash-lite; có thể đổi GEMINI_MODEL theo model tài khoản được phép dùng.
 3. Thêm vào file .env ở thư mục gốc (giữ nguyên các cấu hình hiện có):
 
 ```dotenv
 GEMINI_API_KEY=YOUR_API_KEY
-GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_MODEL=gemini-2.5-flash-lite
 ```
 
 4. Cập nhật ứng dụng từ thư mục gốc:

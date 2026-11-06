@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.*;
 public class CustomerController {
     private final CustomerService service;
 
-    public CustomerController(CustomerService service) { this.service = service; }
+    public CustomerController(CustomerService service) {
+        this.service = service;
+    }
 
     @PostMapping
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Customer created")
@@ -27,13 +29,15 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    public CustomerResponse get(@PathVariable UUID id) { return service.get(id); }
+    public CustomerResponse get(@PathVariable UUID id) {
+        return service.get(id);
+    }
 
     @GetMapping
     public PageResponse<CustomerResponse> list(
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
-            @RequestParam(defaultValue = "") @Size(max = 150) String search) {
+        @RequestParam(defaultValue = "0") @Min(0) int page,
+        @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+        @RequestParam(defaultValue = "") @Size(max = 150) String search) {
         return service.list(page, size, search);
     }
 

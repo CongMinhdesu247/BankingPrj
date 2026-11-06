@@ -1,107 +1,79 @@
-Sau khi bật PC lại, bạn làm 3 bước:
-1. Kết nối Internet và mở Docker Desktop, chờ Docker khởi động xong.
-2. Mở PowerShell.
-3. Chạy:
-   cd C:\Users\ADMIN\Downloads\BankingPrj
-   .\scripts\Start-PublicDemo.ps1 -PublicUrl "https://unselect-rebate-tall.ngrok-free.dev"
-Script sẽ tự khởi động các dịch vụ Docker, chờ chúng sẵn sàng rồi mở ngrok. Không cần tạo lại tài khoản demo hay nhập lại authtoken mỗi lần.
-
-Người ở xa truy cập bằng link cũ:
-
-https://unselect-rebate-tall.ngrok-free.dev
-
-Bạn có thể tiếp tục làm việc bình thường, nhưng cần giữ Docker Desktop và cửa sổ PowerShell đang chạy, đồng thời để PC có mạng và không chuyển sang chế độ Sleep.
-
-Khi muốn ngừng server:
-- Nhấn Ctrl+C trong PowerShell để ngắt truy cập công khai.
-- Chạy lệnh dưới đây để dừng ứng dụng và giữ dữ liệu:
-  docker compose stop
-Sau đó tắt máy bình thường.
-
-
-Sau khi sửa ứng dụng, để cập nhật bản đang chạy trên PC, bạn cần build lại:
-cd C:\Users\ADMIN\Downloads\BankingPrj
-docker compose up -d --build
-
-
 # Bank Transaction & Fraud Monitoring System
 
-## Mở ứng dụng trên localhost
+Hệ thống mô phỏng giao dịch ngân hàng số và giám sát gian lận theo thời gian thực (Spring Boot + React + PostgreSQL + Redis + Kafka).
 
-Ứng dụng chạy tại **[http://localhost:8090](http://localhost:8090)**. Docker khởi động đầy đủ giao diện, API và các dịch vụ đi kèm.
+---
 
-### Lần đầu sử dụng
+## 1. Cách chạy chương trình (Chỉ 1 bước)
 
-1. Cài và mở **Docker Desktop**, chờ Docker sẵn sàng.
-2. Clone hoặc copy dự án về máy, rồi mở thư mục `BankingPrj`.
-3. Chạy file tương ứng với hệ điều hành:
+**Yêu cầu duy nhất:** Cài đặt và bật sẵn **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (không cần cài Java, Node.js hay PostgreSQL).
 
-| Hệ điều hành | Cách khởi động |
-| --- | --- |
-| Windows | Nhấp đúp **`run.bat`** |
-| macOS / Linux | Mở terminal tại thư mục dự án và chạy **`sh ./run.sh`** |
+- **Trên Windows:** Nhấn đúp vào file **`run.bat`** ở thư mục gốc của dự án.
+- **Trên macOS / Linux:** Mở terminal tại thư mục dự án và chạy:
+  ```bash
+  sh ./run.sh
+  ```
 
-Chờ thông báo **`[DONE]`**, sau đó mở **http://localhost:8090** trên trình duyệt. Lần đầu có thể mất vài phút để tải dependencies và build ứng dụng.
+Khi chạy **`run.bat`**, chương trình sẽ tự động:
+1. Khởi tạo file cấu hình bảo mật `.env` (nếu chưa có).
+2. Build và khởi chạy toàn bộ hệ thống qua Docker Compose.
+3. Tạo sẵn các tài khoản mẫu cùng giao dịch mẫu.
+4. Tự động mở trình duyệt tại địa chỉ **[http://localhost:8090](http://localhost:8090)**.
 
-Script tự tạo `.env` khi chưa có và chờ các dịch vụ sẵn sàng. Không cần cài Java, Node.js hay PostgreSQL riêng.
+---
 
-### Đăng nhập
+## 2. Thông tin đăng nhập
 
-- **Khách hàng mới:** chọn **Tạo tài khoản** trên trang đăng nhập. Tài khoản được tạo với số dư ban đầu bằng 0.
-- **Quản trị viên:** tên đăng nhập `docker.admin`; mật khẩu là giá trị `DOCKER_ADMIN_PASSWORD` trong file `.env`.
-- **Tài khoản demo đã có:** dùng thông tin trong `backend/config/docker-demo.credentials.txt`, nếu trước đó đã tạo dữ liệu mẫu.
+Sau khi chương trình khởi động xong tại **[http://localhost:8090](http://localhost:8090)**, bạn có thể đăng nhập bằng:
 
-Để tạo dữ liệu mẫu trên Windows, mở PowerShell 7 tại thư mục dự án sau khi ứng dụng đã sẵn sàng và chạy:
+| Nhóm tài khoản | Tên đăng nhập | Nơi xem mật khẩu |
+| :--- | :--- | :--- |
+| **Khách hàng mẫu** *(có sẵn số dư & giao dịch)* | `mock.an`, `mock.linh`, `mock.minh` | File `backend/config/docker-demo.credentials.txt` |
+| **Nhân viên ngân hàng / Rủi ro** | `mock.staff`, `mock.risk` | File `backend/config/docker-demo.credentials.txt` |
+| **Quản trị viên (Admin)** | `docker.admin` | Biến `DOCKER_ADMIN_PASSWORD` trong file `.env` |
+| **Khách hàng mới** | Nhấn **Tạo tài khoản** trên màn hình đăng nhập | Tự đặt khi đăng ký (số dư ban đầu `0 VND`) |
 
-```powershell
-pwsh -NoProfile -File ./scripts/Seed-DockerDemo.ps1
-```
+---
 
-### Những lần mở tiếp theo
+## 3. Các lệnh quản lý nhanh
 
-Mở Docker Desktop, rồi chạy lại **`run.bat`** hoặc **`sh ./run.sh`**. Tài khoản và dữ liệu trong Docker volumes được giữ lại.
-
-Nếu không có thay đổi mã nguồn, có thể khởi động nhanh từ terminal tại thư mục dự án:
-
-```bash
-docker compose up -d --wait --wait-timeout 300
-```
-
-### Dừng ứng dụng và xem lỗi
-
-Dừng ứng dụng, giữ dữ liệu:
+Mở terminal tại thư mục gốc của dự án khi cần:
 
 ```bash
+# Tạm dừng ứng dụng (giữ nguyên toàn bộ dữ liệu)
 docker compose stop
-```
 
-Nếu không mở được localhost, kiểm tra Docker Desktop đang chạy và xem trạng thái, log:
+# Bật lại nhanh (khi không sửa code)
+docker compose start
 
-```bash
+# Xem trạng thái và kiểm tra log khi cần xử lý sự cố
 docker compose ps -a
 docker compose logs --tail 100
 ```
 
-Giữ file `.env` để sử dụng lại cấu hình đăng nhập. Không chạy `docker compose down -v` nếu cần giữ dữ liệu. Khi chuyển máy, dữ liệu trong Docker volumes cần được backup/restore riêng.
+> **Lưu ý:** Giữ lại file `.env` để bảo toàn mật khẩu kết nối database giữa các lần chạy. Không chạy `docker compose down -v` nếu bạn muốn giữ lại dữ liệu đã tạo.
 
-## Giới thiệu chương trình
+---
 
-**Bank Transaction & Fraud Monitoring System** là ứng dụng mô phỏng giao dịch ngân hàng và giám sát gian lận, dành cho việc học tập và trình diễn nghiệp vụ. Các giao dịch sử dụng dữ liệu và số dư mô phỏng.
+## 4. Tính năng chính & Cấu trúc dự án
 
-Chương trình hỗ trợ:
+- **Dành cho Khách hàng:** Quản lý tài khoản, chuyển tiền nội bộ (chống trùng lặp giao dịch với Idempotency Key), lưu danh bạ thụ hưởng & mẫu chuyển tiền, xem sao kê tháng, tải biên lai PDF, biểu đồ dòng tiền thu/chi, cài đặt hạn mức cá nhân, bảo mật 2 lớp (TOTP Authenticator) và gửi yêu cầu tra soát.
+- **Dành cho Nhân viên & Quản trị viên:** Duyệt hạn mức giao dịch, xử lý yêu cầu hỗ trợ/tra soát, theo dõi cảnh báo gian lận (Fraud Alerts), cấu hình quy tắc chấm điểm rủi ro và tra cứu nhật ký hệ thống (Audit Logs).
+- **Trợ lý ảo (AI Chatbot):** Tích hợp sẵn trợ lý hướng dẫn sử dụng; có thể bật thêm phản hồi từ Google Gemini bằng cách điền `GEMINI_API_KEY` vào file `.env`.
 
-- Đăng ký, đăng nhập và quản lý tài khoản khách hàng.
-- Chuyển tiền nội bộ, lưu người thụ hưởng và mẫu chuyển tiền.
-- Tra cứu lịch sử giao dịch, tải biên lai PDF và xem biểu đồ dòng tiền.
-- Theo dõi cảnh báo rủi ro, hỗ trợ nhân viên và quản trị viên xử lý nghiệp vụ.
-- Gửi yêu cầu tra soát, nhận thông báo và sử dụng chatbot hỗ trợ; Gemini là tích hợp tùy chọn.
+```text
+BankingPrj/
+├── backend/       # API Server (Java 21, Spring Boot 4, Flyway, PostgreSQL, Redis, Kafka)
+├── frontend/      # Giao diện người dùng (React 19, TypeScript, Vite)
+├── infra/         # Cấu hình Nginx reverse proxy cho Docker
+├── scripts/       # Script tự động khởi tạo .env và nạp dữ liệu mẫu
+├── docs/          # Tài liệu kiến trúc và hướng dẫn chi tiết
+├── run.bat        # Chạy nhanh 1 chạm trên Windows
+└── run.sh         # Chạy nhanh trên macOS / Linux
+```
 
-Giao diện sử dụng **React và TypeScript**; backend sử dụng **Java 21 và Spring Boot**. **PostgreSQL** lưu dữ liệu, **Redis** hỗ trợ cache và giới hạn request, **Kafka** xử lý sự kiện; **Nginx** phục vụ giao diện trong Docker.
-
-## Tài liệu thêm
-
-- [Cấu hình Docker, biến môi trường và chuyển sang máy mới](docs/guides/docker-portable.vi.md)
-- [Dữ liệu demo, backup và chia sẻ ứng dụng qua Internet](docs/guides/docker-local.vi.md)
-- [Đăng ký khách hàng](docs/guides/customer-registration.vi.md)
-- [Chatbot AI](docs/guides/ai-chatbot.vi.md)
-- [Biểu đồ tổng quan](docs/guides/dashboard-charts.vi.md)
+### Tài liệu chi tiết
+- [Triển khai Docker & chuyển sang máy khác](docs/guides/docker-portable.vi.md)
+- [Vận hành bản Demo, sao lưu dữ liệu & chia sẻ qua Cloudflare Tunnel](docs/guides/docker-local.vi.md)
+- [Cấu trúc mã nguồn dự án](docs/architecture/project-structure.vi.md)
+- [Cấu hình AI Chatbot (Gemini)](docs/guides/ai-chatbot.vi.md)

@@ -59,66 +59,78 @@ public class ChatbotService {
         không hứa hẹn thời gian xử lý. Chỉ dùng đường dẫn đã liệt kê. Trả văn bản thuần, không HTML.
         """;
     // Best-effort redaction, not a substitute for the UI notice and user consent.
-    private static final Pattern EMAIL=Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}");
-    private static final Pattern NUMBERS=Pattern.compile("(?<![A-Za-z0-9])(?:[0-9][ \t.-]?){6,}(?![A-Za-z0-9])");
+    private static final Pattern EMAIL = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}");
+    private static final Pattern NUMBERS = Pattern.compile("(?<![A-Za-z0-9])(?:[0-9][ \t.-]?){6,}(?![A-Za-z0-9])");
     private final JsonMapper json;
     private final String key, model;
     private final HttpClient http;
     @org.springframework.beans.factory.annotation.Autowired
     public ChatbotService(JsonMapper json, @Value("${GEMINI_API_KEY:}") String key,
-            @Value("${GEMINI_MODEL:gemini-3.5-flash-lite}") String model) {
+        @Value("${GEMINI_MODEL:gemini-2.5-flash-lite}") String model) {
         this(json, key, model, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5))
             .followRedirects(HttpClient.Redirect.NEVER).build());
     }
     ChatbotService(JsonMapper json, String key, String model, HttpClient http) {
-        this.json=json; this.key=key.strip(); this.model=model; this.http=http;
+        this.json = json;
+        this.key = key.strip();
+        this.model = model;
+        this.http = http;
         if (!model.matches("[a-zA-Z0-9.-]{1,100}")) throw new IllegalArgumentException("Invalid Gemini model name");
     }
-    public boolean enabled() { return !key.isBlank(); }
+    public boolean enabled() {
+        return !key.isBlank();
+    }
     static String redact(String text) {
         return NUMBERS.matcher(EMAIL.matcher(text).replaceAll("[email đã ẩn]")).replaceAll("[dãy số đã ẩn]");
     }
     public Answer answer(ChatbotController.Question question) {
         if (!enabled()) return new Answer(localGuide(question.message()), "GUIDE");
-        var contents=new ArrayList<Map<String,Object>>();
+        var contents = new ArrayList<Map<String, Object>>();
         for (var item:question.history()) contents.add(content(item.role(), redact(item.text())));
         contents.add(content("user", redact(question.message())));
-        var payload=Map.of("systemInstruction", Map.of("parts",List.of(Map.of("text",GUIDE))),
-            "contents",contents, "generationConfig",Map.of("temperature",0.2,"maxOutputTokens",2048));
-        var request=HttpRequest.newBuilder(URI.create("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent"))
-            .timeout(Duration.ofSeconds(25)).header("Content-Type","application/json").header("x-goog-api-key",key)
-            .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(payload))).build();
+        var payload = Map.of("systemInstruction", Map.of("parts", List.of(Map.of("text", GUIDE))),
+            "contents", contents, "generationConfig", Map.of("temperature", 0.2, "maxOutputTokens", 2048));
+        var request = HttpRequest.newBuilder(URI.create("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent"))
+        .timeout(Duration.ofSeconds(25)).header("Content-Type", "application/json").header("x-goog-api-key", key)
+        .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(payload))).build();
         try {
-            var response=http.send(request,HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode()==429) throw new BusinessException(ErrorCode.AI_QUOTA_EXCEEDED,"AI quota exceeded.");
-            if (response.statusCode()!=200 || response.body().length()>1000000) throw unavailable();
-            var candidate=json.readTree(response.body()).path("candidates").path(0);
+            var response = http.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 429) throw new BusinessException(ErrorCode.AI_QUOTA_EXCEEDED, "AI quota exceeded.");
+            if (response.statusCode() != 200 || response.body().length()>1000000) throw unavailable();
+            var candidate = json.readTree(response.body()).path("candidates").path(0);
             if (!"STOP".equals(candidate.path("finishReason").asText())) throw unavailable();
-            var answer=new StringBuilder();
+            var answer = new StringBuilder();
             for (var part:candidate.path("content").path("parts")) {
                 if (!part.path("thought").asBoolean(false)) answer.append(part.path("text").asText(""));
             }
             if (answer.toString().isBlank() || answer.length()>12000) throw unavailable();
-            return new Answer(redact(answer.toString()),"GEMINI");
+            return new Answer(EMAIL.matcher(answer.toString()).replaceAll("[email đã ẩn]"), "GEMINI");
         } catch (InterruptedException failure) {
-            Thread.currentThread().interrupt(); throw unavailable();
-        } catch (IOException failure) { throw unavailable(); }
-        catch (BusinessException failure) { throw failure; }
-        catch (RuntimeException failure) { throw unavailable(); }
+            Thread.currentThread().interrupt();
+            throw unavailable();
+        } catch (IOException failure) {
+            throw unavailable();
+        }
+        catch (BusinessException failure) {
+            throw failure;
+        }
+        catch (RuntimeException failure) {
+            throw unavailable();
+        }
     }
-    private static Map<String,Object> content(String role,String text) {
-        return Map.of("role",role,"parts",List.of(Map.of("text",text)));
+    private static Map<String, Object> content(String role, String text) {
+        return Map.of("role", role, "parts", List.of(Map.of("text", text)));
     }
     private static BusinessException unavailable() {
-        return new BusinessException(ErrorCode.AI_UNAVAILABLE,"AI is temporarily unavailable.");
+        return new BusinessException(ErrorCode.AI_UNAVAILABLE, "AI is temporarily unavailable.");
     }
     static String localGuide(String message) {
-        String q=Normalizer.normalize(message.toLowerCase(Locale.ROOT),Normalizer.Form.NFD).replaceAll("\\p{M}","").replace('đ','d');
+        String q = Normalizer.normalize(message.toLowerCase(Locale.ROOT), Normalizer.Form.NFD).replaceAll("\\p{M}", "").replace('đ', 'd');
         if (q.contains("chuyen") || q.contains("timeout")) return "Vào Chuyển tiền, chọn tài khoản nguồn, nhập tài khoản nhận, số tiền VND và nội dung. Kiểm tra kỹ người nhận trước khi xác nhận. Nếu chưa rõ giao dịch thành công hay chưa, mở Lịch sử giao dịch để kiểm tra trước khi thử lại. Cần đối chiếu: mở chi tiết giao dịch rồi chọn Yêu cầu tra soát.";
         if (q.contains("han muc")) return "Vào Hạn mức cá nhân để xem hạn mức hiện tại. Bạn có thể giảm hạn mức; để tăng, gửi yêu cầu và chờ admin phê duyệt. Chatbot không thay đổi hạn mức cho bạn.";
         if (q.contains("sao ke")) return "Vào Sao kê & thu chi, chọn tài khoản và tháng muốn xem. Kiểm tra lại tài khoản và khoảng thời gian nếu chưa thấy giao dịch cần tìm.";
         if (q.contains("bao mat") || q.contains("mat khau") || q.contains("otp")) return "Vào Trung tâm bảo mật để quản lý mật khẩu, xác thực hai bước và phiên đăng nhập. Nếu quên mật khẩu, dùng Quên mật khẩu tại trang đăng nhập. Không chia sẻ mật khẩu, OTP hay mã khôi phục trong chat.";
         return "Bạn có thể dùng menu để mở Tài khoản, Chuyển tiền, Lịch sử giao dịch, Hạn mức cá nhân hoặc Sao kê & thu chi. Với giao dịch cần kiểm tra, mở Lịch sử giao dịch → chi tiết → Yêu cầu tra soát, rồi theo dõi phản hồi tại Tra soát & hỗ trợ. Gửi tra soát không tự hủy hoặc hoàn tiền. Hiện đây là hướng dẫn có sẵn; AI chưa được cấu hình.";
     }
-    public record Answer(String reply,String source) {}
+    public record Answer(String reply, String source) {}
 }

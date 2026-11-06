@@ -15,14 +15,19 @@ import org.springframework.web.bind.annotation.*;
 public class StaffCustomerController {
     private final CustomerService customers;
     private final AccountService accounts;
-    public StaffCustomerController(CustomerService customers,AccountService accounts) { this.customers=customers; this.accounts=accounts; }
-    @GetMapping public PageResponse<CustomerResponse> list(@RequestParam(defaultValue="0") @Min(0) int page,
-        @RequestParam(defaultValue="20") @Min(1) @Max(100) int size,@RequestParam(defaultValue="") @Size(max=150) String search) {
-        return customers.list(page,size,search);
+    public StaffCustomerController(CustomerService customers, AccountService accounts) {
+        this.customers = customers;
+        this.accounts = accounts;
     }
-    @GetMapping("/{id}") public CustomerResponse get(@PathVariable UUID id) { return customers.get(id); }
+    @GetMapping public PageResponse<CustomerResponse> list(@RequestParam(defaultValue="0") @Min(0) int page,
+        @RequestParam(defaultValue="20") @Min(1) @Max(100) int size, @RequestParam(defaultValue="") @Size(max=150) String search) {
+        return customers.list(page, size, search);
+    }
+    @GetMapping("/{id}") public CustomerResponse get(@PathVariable UUID id) {
+        return customers.get(id);
+    }
     @GetMapping("/{id}/accounts") public PageResponse<AccountResponse> accounts(@PathVariable UUID id,
-        @RequestParam(defaultValue="0") @Min(0) int page,@RequestParam(defaultValue="20") @Min(1) @Max(100) int size) {
-        return accounts.list(id,page,size);
+        @RequestParam(defaultValue="0") @Min(0) int page, @RequestParam(defaultValue="20") @Min(1) @Max(100) int size) {
+        return accounts.list(id, page, size);
     }
 }

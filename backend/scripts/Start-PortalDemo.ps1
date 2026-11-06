@@ -68,9 +68,9 @@ try {
     }
     if (-not $ready) { throw "Demo backend did not become ready. Inspect $demoRoot" }
     $admin=(Invoke-DemoApi 'POST' '/auth/login' @{username='portal.admin';password=$adminPassword}).accessToken
-    $first=Invoke-DemoApi 'POST' '/customers' @{customerCode='PORTAL-AN';fullName='Nguyễn Minh An';email='an@portal.example';phone='0900000001'} $admin
-    $second=Invoke-DemoApi 'POST' '/customers' @{customerCode='PORTAL-LINH';fullName='Trần Gia Linh';email='linh@portal.example';phone='0900000002'} $admin
-    $reserve=Invoke-DemoApi 'POST' '/customers' @{customerCode='PORTAL-RESERVE';fullName='Quỹ mô phỏng Portal';email='reserve@portal.example';phone=$null} $admin
+    $first=Invoke-DemoApi 'POST' '/customers' @{customerCode='PORTAL-AN';fullName=[regex]::Unescape('Nguy\u1ec5n Minh An');email='an@portal.example';phone='0900000001'} $admin
+    $second=Invoke-DemoApi 'POST' '/customers' @{customerCode='PORTAL-LINH';fullName=[regex]::Unescape('Tr\u1ea7n Gia Linh');email='linh@portal.example';phone='0900000002'} $admin
+    $reserve=Invoke-DemoApi 'POST' '/customers' @{customerCode='PORTAL-RESERVE';fullName=[regex]::Unescape('Qu\u1ef9 m\u00f4 ph\u1ecfng Portal');email='reserve@portal.example';phone=$null} $admin
     $source=Invoke-DemoApi 'POST' "/customers/$($first.id)/accounts" @{currency='VND'} $admin
     $savings=Invoke-DemoApi 'POST' "/customers/$($first.id)/accounts" @{currency='VND'} $admin
     $destination=Invoke-DemoApi 'POST' "/customers/$($second.id)/accounts" @{currency='VND'} $admin
@@ -89,31 +89,44 @@ SELECT id FROM accounts ORDER BY id FOR UPDATE;
 UPDATE accounts SET balance=500000000,version=version+1,updated_at=now() WHERE id='$($treasury.id)';
 "@
     $reserveBalance=500000000L
+    $portalOpeningDesc=[regex]::Unescape('Ph\u00e2n b\u1ed5 v\u1ed1n m\u00f4 ph\u1ecfng Portal')
     foreach ($allocation in @(@{account=$source.id;amount=240000000L},@{account=$savings.id;amount=80000000L},@{account=$destination.id;amount=50000000L})) {
         $transactionId=[guid]::NewGuid().ToString(); $reserveBalance-=$allocation.amount
         $seed += @"
 
-INSERT INTO transactions(id,reference,source_account_id,destination_account_id,amount,currency,type,status,description,created_at) VALUES ('$transactionId','OPN-$transactionId','$($treasury.id)','$($allocation.account)',$($allocation.amount),'VND','OPENING','COMPLETED','Phân bổ vốn mô phỏng Portal',clock_timestamp());
+INSERT INTO transactions(id,reference,source_account_id,destination_account_id,amount,currency,type,status,description,created_at) VALUES ('$transactionId','OPN-$transactionId','$($treasury.id)','$($allocation.account)',$($allocation.amount),'VND','OPENING','COMPLETED','$portalOpeningDesc',clock_timestamp());
 UPDATE accounts SET balance=$reserveBalance,version=version+1,updated_at=now() WHERE id='$($treasury.id)';
 UPDATE accounts SET balance=$($allocation.amount),version=version+1,updated_at=now() WHERE id='$($allocation.account)';
 INSERT INTO transaction_entries(transaction_id,account_id,direction,amount,currency,balance_after,created_at) VALUES ('$transactionId','$($treasury.id)','DEBIT',$($allocation.amount),'VND',$reserveBalance,(SELECT created_at FROM transactions WHERE id='$transactionId')),('$transactionId','$($allocation.account)','CREDIT',$($allocation.amount),'VND',$($allocation.amount),(SELECT created_at FROM transactions WHERE id='$transactionId'));
 "@
     }
     $seed += "`nCOMMIT;"
-    $seedPath=Join-Path $demoRoot 'seed-opening.sql'; Set-Content -LiteralPath $seedPath -Value $seed -Encoding utf8
+    $seedPath=Join-Path $demoRoot 'seed-opening.sql'; [IO.File]::WriteAllText($seedPath, $seed, [Text.UTF8Encoding]::new($false))
     & (Join-Path $PostgreSqlBin 'psql.exe') -X -h 127.0.0.1 -p $pgPort -U portal_demo -d banking_test -v ON_ERROR_STOP=1 -f $seedPath | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Isolated opening fixture failed.' }
     $firstToken=(Invoke-DemoApi 'POST' '/auth/login' @{username='demo.an';password=$customerPassword}).accessToken
     $secondToken=(Invoke-DemoApi 'POST' '/auth/login' @{username='demo.linh';password=$otherPassword}).accessToken
     $null=Invoke-DemoApi 'POST' '/me/beneficiaries' @{destinationAccountId=$destination.id;nickname='Gia Linh'} $firstToken
-    $null=Invoke-DemoApi 'POST' '/me/beneficiaries' @{destinationAccountId=$savings.id;nickname='Tài khoản dự phòng'} $firstToken
+    $null=Invoke-DemoApi 'POST' '/me/beneficiaries' @{destinationAccountId=$savings.id;nickname=[regex]::Unescape('T\u00e0i kho\u1ea3n d\u1ef1 ph\u00f2ng')} $firstToken
     # HIGH: amount + newly saved beneficiary, before the velocity threshold.
-    $null=Invoke-DemoApi 'POST' '/transfers' @{sourceAccountId=$source.id;destinationAccountId=$destination.id;amount='100000000';currency='VND';description='Giao dịch mô phỏng cảnh báo HIGH'} $firstToken
-    $descriptions=@('Chi phí sinh hoạt','Bữa trưa cuối tuần','Gửi bạn một chút niềm vui','Mua sách tháng này','Cà phê cùng bạn','Đóng góp chuyến đi','Thanh toán bữa tối','Quà tặng cuối tháng','Chia sẻ chi phí','Chuyển khoản gia đình','Hẹn một ngày đẹp trời')
+    $null=Invoke-DemoApi 'POST' '/transfers' @{sourceAccountId=$source.id;destinationAccountId=$destination.id;amount='100000000';currency='VND';description=[regex]::Unescape('Giao d\u1ecbch m\u00f4 ph\u1ecfng c\u1ea3nh b\u00e1o HIGH')} $firstToken
+    $descriptions=@(
+        [regex]::Unescape('Chi ph\u00ed sinh ho\u1ea1t'),
+        [regex]::Unescape('B\u1eefa tr\u01b0a cu\u1ed1i tu\u1ea7n'),
+        [regex]::Unescape('G\u1eedi b\u1ea1n m\u1ed9t ch\u00fat ni\u1ec1m vui'),
+        [regex]::Unescape('Mua s\u00e1ch th\u00e1ng n\u00e0y'),
+        [regex]::Unescape('C\u00e0 ph\u00ea c\u00f9ng b\u1ea1n'),
+        [regex]::Unescape('\u0110\u00f3ng g\u00f3p chuy\u1ebfn \u0111i'),
+        [regex]::Unescape('Thanh to\u00e1n b\u1eefa t\u1ed1i'),
+        [regex]::Unescape('Qu\u00e0 t\u1eb7ng cu\u1ed1i th\u00e1ng'),
+        [regex]::Unescape('Chia s\u1ebb chi ph\u00ed'),
+        [regex]::Unescape('Chuy\u1ec3n kho\u1ea3n gia \u0111\u00ecnh'),
+        [regex]::Unescape('H\u1eb9n m\u1ed9t ng\u00e0y \u0111\u1eb9p tr\u1eddi')
+    )
     for ($i=0;$i -lt $descriptions.Count;$i++) {
         $null=Invoke-DemoApi 'POST' '/transfers' @{sourceAccountId=$source.id;destinationAccountId=$destination.id;amount=[string](100000+($i*25000));currency='VND';description=$descriptions[$i]} $firstToken
     }
-    $null=Invoke-DemoApi 'POST' '/transfers' @{sourceAccountId=$destination.id;destinationAccountId=$source.id;amount='250000';currency='VND';description='Gửi lại bạn nhé'} $secondToken
+    $null=Invoke-DemoApi 'POST' '/transfers' @{sourceAccountId=$destination.id;destinationAccountId=$source.id;amount='250000';currency='VND';description=[regex]::Unescape('G\u1eedi l\u1ea1i b\u1ea1n nh\u00e9')} $secondToken
     # Actual failed HTTP logins create durable evidence; demo guard=6 lets a sixth, correct login reset it.
     foreach ($person in @(@{username='demo.an';password=$customerPassword},@{username='demo.linh';password=$otherPassword})) {
         for ($attempt=0;$attempt -lt 5;$attempt++) {
@@ -124,8 +137,8 @@ INSERT INTO transaction_entries(transaction_id,account_id,direction,amount,curre
         if ($person.username -eq 'demo.an') { $firstToken=$login.accessToken } else { $secondToken=$login.accessToken }
     }
     # CRITICAL: all four rule matches cap at 100; LOW: only failed-login context for the other actor.
-    $null=Invoke-DemoApi 'POST' '/transfers' @{sourceAccountId=$source.id;destinationAccountId=$destination.id;amount='100000000';currency='VND';description='Giao dịch mô phỏng cảnh báo CRITICAL'} $firstToken
-    $null=Invoke-DemoApi 'POST' '/transfers' @{sourceAccountId=$destination.id;destinationAccountId=$source.id;amount='1000';currency='VND';description='Giao dịch mô phỏng cảnh báo LOW'} $secondToken
+    $null=Invoke-DemoApi 'POST' '/transfers' @{sourceAccountId=$source.id;destinationAccountId=$destination.id;amount='100000000';currency='VND';description=[regex]::Unescape('Giao d\u1ecbch m\u00f4 ph\u1ecfng c\u1ea3nh b\u00e1o CRITICAL')} $firstToken
+    $null=Invoke-DemoApi 'POST' '/transfers' @{sourceAccountId=$destination.id;destinationAccountId=$source.id;amount='1000';currency='VND';description=[regex]::Unescape('Giao d\u1ecbch m\u00f4 ph\u1ecfng c\u1ea3nh b\u00e1o LOW')} $secondToken
     # Do not call the demo ready until the real Kafka consumers have caught up.
     $riskToken=(Invoke-DemoApi 'POST' '/auth/login' @{username='demo.risk';password=$riskPassword}).accessToken
     $deadline=[DateTime]::UtcNow.AddSeconds(60); $caughtUp=$false

@@ -13,7 +13,7 @@ class ChatbotServiceTest {
     private ChatbotController.Question question(String text) { return new ChatbotController.Question(text,List.of(),true); }
     @Test void missingKeyUsesLabelledGuideWithoutExternalRequest() {
         var http=mock(HttpClient.class);
-        var service=new ChatbotService(json,"","gemini-3.5-flash-lite",http);
+        var service=new ChatbotService(json,"","gemini-2.5-flash-lite",http);
         assertFalse(service.enabled());
         var answer=service.answer(question("Tăng hạn mức thế nào?"));
         assertEquals("GUIDE",answer.source()); assertTrue(answer.reply().contains("phê duyệt"));
@@ -30,7 +30,7 @@ class ChatbotServiceTest {
             {"candidates":[{"finishReason":"STOP","content":{"parts":[{"thought":true,"text":"internal"},{"text":"Mở Sao kê & thu chi."}]}}]}
             """);
         when(http.send(any(HttpRequest.class),any(HttpResponse.BodyHandler.class))).thenReturn(response);
-        var service=new ChatbotService(json,"server-secret","gemini-3.5-flash-lite",http);
+        var service=new ChatbotService(json,"server-secret","gemini-2.5-flash-lite",http);
         var answer=service.answer(question("Xem sao kê?"));
         assertEquals("GEMINI",answer.source()); assertEquals("Mở Sao kê & thu chi.",answer.reply());
         var request=org.mockito.ArgumentCaptor.forClass(HttpRequest.class);
@@ -43,7 +43,7 @@ class ChatbotServiceTest {
             var http=mock(HttpClient.class); var response=mock(HttpResponse.class);
             when(response.statusCode()).thenReturn(code); when(response.body()).thenReturn("{\"secret\":\"provider details\"}");
             when(http.send(any(HttpRequest.class),any(HttpResponse.BodyHandler.class))).thenReturn(response);
-            var service=new ChatbotService(json,"key","gemini-3.5-flash-lite",http);
+            var service=new ChatbotService(json,"key","gemini-2.5-flash-lite",http);
             var failure=assertThrows(BusinessException.class,()->service.answer(question("Giúp tôi")));
             assertEquals(code==429?"AI_QUOTA_EXCEEDED":"AI_UNAVAILABLE",failure.getCode());
             assertFalse(failure.getMessage().contains("provider details"));
@@ -52,7 +52,7 @@ class ChatbotServiceTest {
     @Test void timeoutReturnsRecoverableError() throws Exception {
         var http=mock(HttpClient.class);
         when(http.send(any(HttpRequest.class),any(HttpResponse.BodyHandler.class))).thenThrow(new HttpTimeoutException("timeout"));
-        var service=new ChatbotService(json,"key","gemini-3.5-flash-lite",http);
+        var service=new ChatbotService(json,"key","gemini-2.5-flash-lite",http);
         assertEquals("AI_UNAVAILABLE",assertThrows(BusinessException.class,()->service.answer(question("Giúp tôi"))).getCode());
     }
     @Test void validatesConsentHistoryAndLength() {

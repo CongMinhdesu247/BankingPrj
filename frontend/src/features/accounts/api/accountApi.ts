@@ -6,7 +6,8 @@ export const accountApi = {
   async all(signal?: AbortSignal): Promise<Account[]> {
     const accounts: Account[] = [];
     for (let page = 0; page < 100; page++) {
-      const response = await this.list(page, signal); accounts.push(...response.content);
+      const response = await this.list(page, signal);
+      accounts.push(...response.content);
       if (response.last) return accounts;
     }
     throw new Error('Account list is too large');

@@ -14,15 +14,20 @@ GRANT SELECT ON customers, accounts, users, roles, user_roles, transactions,
     transaction_entries, transfer_limits, beneficiaries, audit_logs, login_history,
     idempotency_keys, fraud_rules, fraud_analysis_runs, fraud_alerts,
     fraud_alert_rule_matches, processed_events, notifications, transfer_attempts,
-    outbox_events TO banking_runtime;
+    outbox_events, auth_sessions, user_security, recovery_codes,
+    password_reset_tokens, transfer_templates, support_tickets, support_messages,
+    personal_transfer_limits, limit_change_requests TO banking_runtime;
 GRANT INSERT ON customers, accounts, users, user_roles, transactions,
     transaction_entries, transfer_limits, beneficiaries, audit_logs, login_history,
     idempotency_keys, fraud_rules, fraud_analysis_runs, fraud_alerts,
     fraud_alert_rule_matches, processed_events, notifications, transfer_attempts,
-    outbox_events TO banking_runtime;
+    outbox_events, auth_sessions, user_security, recovery_codes,
+    password_reset_tokens, transfer_templates, support_tickets, support_messages,
+    personal_transfer_limits, limit_change_requests TO banking_runtime;
 GRANT UPDATE ON customers, accounts, users, transfer_limits, beneficiaries,
     idempotency_keys, fraud_rules, fraud_analysis_runs, fraud_alerts, notifications,
-    outbox_events TO banking_runtime;
-GRANT DELETE ON user_roles TO banking_runtime;
+    outbox_events, auth_sessions, user_security, password_reset_tokens,
+    support_tickets, personal_transfer_limits, limit_change_requests TO banking_runtime;
+GRANT DELETE ON user_roles, recovery_codes, transfer_templates TO banking_runtime;
 -- No TRUNCATE, DDL, trigger ownership, evidence UPDATE/DELETE or schema history
 -- access. Do not run Flyway with this role; use separate migration credentials.

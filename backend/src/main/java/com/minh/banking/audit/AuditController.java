@@ -4,9 +4,11 @@ import com.minh.banking.common.response.PageResponse;
 import jakarta.validation.constraints.*;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController @RequestMapping("/api/v1/audit-logs")
+@PreAuthorize("hasAnyRole('ADMIN','BANK_STAFF')")
 public class AuditController {
     private final AuditQueryService service;
     public AuditController(AuditQueryService service) { this.service=service; }

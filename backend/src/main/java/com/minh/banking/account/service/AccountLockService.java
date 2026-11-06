@@ -20,7 +20,7 @@ public class AccountLockService {
     private final long lockTimeoutMs;
 
     public AccountLockService(EntityManager entityManager,
-            @Value("${banking.transfer.lock-timeout-ms:2000}") long lockTimeoutMs) {
+        @Value("${banking.transfer.lock-timeout-ms:2000}") long lockTimeoutMs) {
         if (lockTimeoutMs < 1 || lockTimeoutMs > 60000) throw new IllegalArgumentException("Invalid account lock timeout");
         this.entityManager = entityManager;
         this.lockTimeoutMs = lockTimeoutMs;
@@ -63,7 +63,7 @@ public class AccountLockService {
     private void configureLockTimeout() {
         // SET LOCAL semantics: applies only to this transaction, not the pooled connection's next user.
         entityManager.createNativeQuery("select set_config('lock_timeout', :timeout, true)")
-            .setParameter("timeout", lockTimeoutMs + "ms").getSingleResult();
+        .setParameter("timeout", lockTimeoutMs + "ms").getSingleResult();
     }
 
     private Account loadLocked(UUID id) {

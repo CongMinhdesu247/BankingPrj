@@ -8,18 +8,135 @@ import { SecondFactorInput } from '../../security/components/SecondFactorInput';
 import { ApiFailure } from '../../../shared/api/httpClient';
 import './register.css';
 export function LoginPage() {
-  const { me, login, notice } = useAuth(); const location = useLocation();
-  const [showOtp, setShowOtp] = useState(false); const [otp, setOtp] = useState(''); const [username, setUsername] = useState(() => (location.state as { registeredUsername?: string } | null)?.registeredUsername ?? ''); const [password, setPassword] = useState('');
-  const [visible, setVisible] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState<unknown>(null); const [invalid, setInvalid] = useState(false);
+  const { me, login, notice } = useAuth();
+  const location = useLocation();
+  const [showOtp, setShowOtp] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [username, setUsername] = useState(() => (location.state as { registeredUsername?: string } | null)?.registeredUsername ?? '');
+  const [password, setPassword] = useState('');
+  const [visible, setVisible] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const [invalid, setInvalid] = useState(false);
   const from = (location.state as { from?: string } | null)?.from;
   const destination = from?.startsWith('/') && !from.startsWith('//') && !from.startsWith('/login') ? from : '/';
   if (me) return <Navigate to={destination} replace />;
   async function submit(event: FormEvent) {
-    event.preventDefault(); if (busy) return;
-    if (!username.trim() || !password) { setInvalid(true); return; }
-    setBusy(true); setError(null); setInvalid(false);
-    try { if (otp.trim()) await login(username.trim(), password, otp.trim()); else await login(username.trim(), password); setPassword(''); }
-    catch (failure) { setError(failure); if (failure instanceof ApiFailure && failure.code === 'MFA_REQUIRED') setShowOtp(true); } finally { setBusy(false); }
+    event.preventDefault();
+    if (busy) return;
+    if (!username.trim() || !password) {
+      setInvalid(true);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setInvalid(false);
+    try {
+      if (otp.trim()) await login(username.trim(), password, otp.trim());
+      else await login(username.trim(), password);
+      setPassword('');
+    }
+    catch (failure) {
+      setError(failure);
+      if (failure instanceof ApiFailure && failure.code === 'MFA_REQUIRED') setShowOtp(true);
+    }
+    finally { setBusy(false); }
   }
-  return <div className="login-shell"><section className="login-story"><Brand light /><span className="login-edition">Dành cho khách hàng cá nhân</span><div className="login-story-copy"><h1>Tài chính của bạn.<br /><span>Trong tầm tay.</span></h1><p>Một không gian để quản lý tài khoản, chuyển tiền và theo dõi mọi giao dịch của bạn.</p></div><div className="login-art" aria-hidden="true"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" /><div className="login-art-card"><div><Sprout size={29} /><strong>AGRIBANK</strong><span>VND</span></div><div className="art-chip"><i /><i /><i /></div><p>•••• &nbsp; •••• &nbsp; •••• &nbsp; 2026</p><small>YOUR EVERYDAY BANKING</small><Leaf className="art-leaf" size={145} strokeWidth={0.6} /></div><div className="login-art-note"><ShieldCheck size={22} /><span>Giao dịch rõ ràng<br /><strong>Kiểm soát chủ động</strong></span></div></div><div className="login-story-footer"><span>AGRIBANK PORTFOLIO</span><span>Dự án học tập · 2026</span></div></section><section className="login-form-side"><span className="environment-label"><i /> Môi trường mô phỏng</span><div className="login-form-wrap"><span className="login-welcome-icon"><UserRound size={26} /></span><span className="eyebrow">Chào mừng bạn trở lại</span><h2>Đăng nhập</h2><p className="login-intro">Quản lý tài khoản và giao dịch theo cách của bạn.</p>{notice && <div className="notice info" role="status">{notice}</div>}<ErrorBanner error={error} /><form onSubmit={submit} noValidate><label className="field-label" htmlFor="username">Tên đăng nhập</label><div className="input-with-icon"><UserRound size={18} /><input id="username" autoComplete="username" value={username} onChange={event => setUsername(event.target.value)} placeholder="Nhập tên đăng nhập" maxLength={100} autoFocus aria-invalid={invalid && !username.trim()} /></div><FieldError>{invalid && !username.trim() && 'Vui lòng nhập tên đăng nhập.'}</FieldError><label className="field-label" htmlFor="password">Mật khẩu</label><div className="input-with-icon"><LockKeyhole size={18} /><input id="password" type={visible ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Nhập mật khẩu" maxLength={128} aria-invalid={invalid && !password} /><Button className="icon-button ghost" aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} onClick={() => setVisible(value => !value)}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}</Button></div><FieldError>{invalid && !password && 'Vui lòng nhập mật khẩu.'}</FieldError><label className="checkbox-label login-otp-toggle"><input type="checkbox" checked={showOtp} onChange={event => { setShowOtp(event.target.checked); setOtp(''); }} />Tôi đã bật bảo vệ hai bước</label>{showOtp && <SecondFactorInput value={otp} onChange={setOtp} disabled={busy} />}<Link className="text-link" to="/forgot-password">Quên mật khẩu?</Link><Button type="submit" className="primary login-submit" loading={busy}>Đăng nhập <ArrowRight size={19} /></Button></form><p className="login-registration-link">Chưa có tài khoản? <Link className="text-link" to="/register">Tạo tài khoản</Link></p><div className="login-security"><ShieldCheck size={17} /><p>Không chia sẻ mật khẩu. Chỉ đăng nhập trên website bạn tin cậy.</p></div></div><div className="login-form-footer"><LockKeyhole size={14} /> Phiên truy cập cá nhân · Không lưu mật khẩu</div></section></div>;
+  return <div className="login-shell">
+    <section className="login-story">
+      <Brand light />
+      <span className="login-edition">Dành cho khách hàng cá nhân</span>
+      <div className="login-story-copy">
+        <h1>Tài chính của bạn.<br /><span>Trong tầm tay.</span></h1>
+        <p>Một không gian để quản lý tài khoản, chuyển tiền và theo dõi mọi giao dịch của bạn.</p>
+      </div>
+      <div className="login-art" aria-hidden="true">
+        <div className="orbit orbit-one" />
+        <div className="orbit orbit-two" />
+        <div className="orbit orbit-three" />
+        <div className="login-art-card">
+          <div>
+            <Sprout size={29} />
+            <strong>AGRIBANK</strong>
+            <span>VND</span>
+          </div>
+          <div className="art-chip">
+            <i />
+            <i />
+            <i />
+          </div>
+          <p>•••• &nbsp; •••• &nbsp; •••• &nbsp; 2026</p>
+          <small>YOUR EVERYDAY BANKING</small>
+          <Leaf className="art-leaf" size={145} strokeWidth={0.6} />
+        </div>
+        <div className="login-art-note">
+          <ShieldCheck size={22} />
+          <span>Giao dịch rõ ràng<br /><strong>Kiểm soát chủ động</strong></span>
+        </div>
+      </div>
+      <div className="login-story-footer">
+        <span>AGRIBANK PORTFOLIO</span>
+        <span>Dự án học tập · 2026</span>
+      </div>
+    </section>
+    <section className="login-form-side">
+      <span className="environment-label"><i /> Môi trường mô phỏng</span>
+      <div className="login-form-wrap">
+        <span className="login-welcome-icon"><UserRound size={26} /></span>
+        <span className="eyebrow">Chào mừng bạn trở lại</span>
+        <h2>Đăng nhập</h2>
+        <p className="login-intro">Quản lý tài khoản và giao dịch theo cách của bạn.</p>
+        {notice && <div className="notice info" role="status">{notice}</div>}
+        <ErrorBanner error={error} />
+        <form onSubmit={submit} noValidate>
+          <label className="field-label" htmlFor="username">Tên đăng nhập</label>
+          <div className="input-with-icon">
+            <UserRound size={18} />
+            <input
+              id="username"
+              autoComplete="username"
+              value={username}
+              onChange={event => setUsername(event.target.value)}
+              placeholder="Nhập tên đăng nhập"
+              maxLength={100}
+              autoFocus
+              aria-invalid={invalid && !username.trim()} />
+          </div>
+          <FieldError>
+            {invalid && !username.trim() && 'Vui lòng nhập tên đăng nhập.'}
+          </FieldError>
+          <label className="field-label" htmlFor="password">Mật khẩu</label>
+          <div className="input-with-icon">
+            <LockKeyhole size={18} />
+            <input
+              id="password"
+              type={visible ? 'text' : 'password'}
+              autoComplete="current-password"
+              value={password}
+              onChange={event => setPassword(event.target.value)}
+              placeholder="Nhập mật khẩu"
+              maxLength={128}
+              aria-invalid={invalid && !password} />
+            <Button className="icon-button ghost" aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} onClick={() => setVisible(value => !value)}>
+              {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+            </Button>
+          </div>
+          <FieldError>{invalid && !password && 'Vui lòng nhập mật khẩu.'}</FieldError>
+          <label className="checkbox-label login-otp-toggle"><input type="checkbox" checked={showOtp} onChange={event => {
+            setShowOtp(event.target.checked);
+            setOtp('');
+          }} />Tôi đã bật bảo vệ hai bước</label>
+          {showOtp && <SecondFactorInput value={otp} onChange={setOtp} disabled={busy} />}
+          <Link className="text-link" to="/forgot-password">Quên mật khẩu?</Link>
+          <Button type="submit" className="primary login-submit" loading={busy}>Đăng nhập <ArrowRight size={19} /></Button>
+        </form>
+        <p className="login-registration-link">Chưa có tài khoản? <Link className="text-link" to="/register">Tạo tài khoản</Link></p>
+        <div className="login-security">
+          <ShieldCheck size={17} />
+          <p>Không chia sẻ mật khẩu. Chỉ đăng nhập trên website bạn tin cậy.</p>
+        </div>
+      </div>
+      <div className="login-form-footer"><LockKeyhole size={14} /> Phiên truy cập cá nhân · Không lưu mật khẩu</div>
+    </section>
+  </div>;
 }

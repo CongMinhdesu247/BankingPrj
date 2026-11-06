@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BankingTestFixtures {
     @Bean
     FixtureWriter fixtureWriter(JdbcTemplate jdbc, AccountLockService locks, EntityManager entityManager,
-            BankTransactionRepository transactions, TransactionEntryRepository entries) {
+        BankTransactionRepository transactions, TransactionEntryRepository entries) {
         return new FixtureWriter(jdbc, locks, entityManager, transactions, entries);
     }
 
@@ -32,7 +32,7 @@ public class BankingTestFixtures {
         private final TransactionEntryRepository entries;
 
         FixtureWriter(JdbcTemplate jdbc, AccountLockService locks, EntityManager entityManager,
-                BankTransactionRepository transactions, TransactionEntryRepository entries) {
+            BankTransactionRepository transactions, TransactionEntryRepository entries) {
             this.jdbc = jdbc;
             this.locks = locks;
             this.entityManager = entityManager;

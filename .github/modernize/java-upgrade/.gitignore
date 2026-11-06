@@ -1,0 +1,2 @@
+# Ignore generated hook logs, keep hardened scripts.
+hooks/*.json

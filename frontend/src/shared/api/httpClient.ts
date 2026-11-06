@@ -3,16 +3,42 @@ import type { ErrorBody } from '../types/api';
 let accessToken: string | null = null;
 let sessionGeneration = 0;
 let onUnauthorized: (() => void) | undefined;
-export const setAccessToken = (token: string | null) => { accessToken = token; sessionGeneration++; };
+export const setAccessToken = (token: string | null) => {
+  accessToken = token;
+  sessionGeneration++;
+};
 export const setUnauthorizedHandler = (handler: (() => void) | undefined) => { onUnauthorized = handler; };
 
 export class ApiFailure extends Error {
-  constructor(public readonly code: string, public readonly status = 0, public readonly requestId?: string) {
-    super(code); this.name = 'ApiFailure';
+  constructor(
+    public readonly code: string,
+    public readonly status = 0,
+    public readonly requestId?: string,
+    public readonly fieldErrors?: { field: string; message: string }[],
+  ) {
+    super(code);
+    this.name = 'ApiFailure';
   }
-  get outcomeUnknown() { return this.status === 0 || this.status >= 500 || this.status === 429 || this.status === 401 || this.code === 'IDEMPOTENCY_CONFLICT'; }
+  get outcomeUnknown() {
+    return this.status === 0 || this.status >= 500 || this.status === 429 || this.status === 401 || this.code === 'IDEMPOTENCY_CONFLICT';
+  }
 }
-const messages: Record<string, string> = { REGISTRATION_CONFLICT: 'Tên đăng nhập hoặc email đã được sử dụng. Hãy dùng thông tin khác hoặc đăng nhập tài khoản đã có.', CHATBOT_NOT_DEPLOYED: 'Backend đang dùng chưa có chatbot. Nếu chạy Docker, mở http://localhost:8090; bản demo cổng 5174 cần cập nhật backend.', AI_QUOTA_EXCEEDED: 'Gemini đã hết hạn mức hoặc đang quá tải. Hãy thử lại sau hoặc mở tra soát.', AI_UNAVAILABLE: 'Trợ lý AI đang tạm gián đoạn. Hãy thử lại sau hoặc mở tra soát.', SECURITY_VERIFICATION_FAILED: 'Mật khẩu hoặc mã xác thực chưa đúng. Mã OTP đã dùng không thể dùng lại.', MFA_REQUIRED: 'Nhập thêm mã OTP hoặc mã khôi phục để đăng nhập.', INVALID_RESET_TOKEN: 'Liên kết khôi phục không hợp lệ hoặc đã hết hạn.', LIMIT_INCREASE_REQUIRED: 'Tăng hạn mức cần gửi yêu cầu để admin phê duyệt.', TEMPLATE_NOT_FOUND: 'Không tìm thấy mẫu chuyển tiền của bạn.', TICKET_NOT_FOUND: 'Không tìm thấy yêu cầu tra soát của bạn.', REQUEST_NOT_FOUND: 'Không tìm thấy yêu cầu hạn mức.', INVALID_WORKFLOW_STATE: 'Trạng thái đã thay đổi hoặc thao tác không còn khả dụng. Hãy làm mới dữ liệu.', INVALID_LIMIT: 'Hạn mức chưa hợp lệ hoặc vượt trần ngân hàng.', DATA_CONFLICT: 'Yêu cầu đang tồn tại hoặc tên đã được sử dụng. Hãy kiểm tra danh sách trước khi gửi lại.', USER_CONFLICT: 'Tên đăng nhập đã được sử dụng.',
+const messages: Record<string, string> = {
+  REGISTRATION_CONFLICT: 'Tên đăng nhập hoặc email đã được sử dụng. Hãy dùng thông tin khác hoặc đăng nhập tài khoản đã có.',
+  CHATBOT_NOT_DEPLOYED: 'Backend đang dùng chưa có chatbot. Nếu chạy Docker, mở http://localhost:8090; bản demo cổng 5174 cần cập nhật backend.',
+  AI_QUOTA_EXCEEDED: 'Gemini đã hết hạn mức hoặc đang quá tải. Hãy thử lại sau hoặc mở tra soát.',
+  AI_UNAVAILABLE: 'Trợ lý AI đang tạm gián đoạn. Hãy thử lại sau hoặc mở tra soát.',
+  SECURITY_VERIFICATION_FAILED: 'Mật khẩu hoặc mã xác thực chưa đúng. Mã OTP đã dùng không thể dùng lại.',
+  MFA_REQUIRED: 'Nhập thêm mã OTP hoặc mã khôi phục để đăng nhập.',
+  INVALID_RESET_TOKEN: 'Liên kết khôi phục không hợp lệ hoặc đã hết hạn.',
+  LIMIT_INCREASE_REQUIRED: 'Tăng hạn mức cần gửi yêu cầu để admin phê duyệt.',
+  TEMPLATE_NOT_FOUND: 'Không tìm thấy mẫu chuyển tiền của bạn.',
+  TICKET_NOT_FOUND: 'Không tìm thấy yêu cầu tra soát của bạn.',
+  REQUEST_NOT_FOUND: 'Không tìm thấy yêu cầu hạn mức.',
+  INVALID_WORKFLOW_STATE: 'Trạng thái đã thay đổi hoặc thao tác không còn khả dụng. Hãy làm mới dữ liệu.',
+  INVALID_LIMIT: 'Hạn mức chưa hợp lệ hoặc vượt trần ngân hàng.',
+  DATA_CONFLICT: 'Yêu cầu đang tồn tại hoặc tên đã được sử dụng. Hãy kiểm tra danh sách trước khi gửi lại.',
+  USER_CONFLICT: 'Tên đăng nhập đã được sử dụng.',
   INVALID_CREDENTIALS: 'Tên đăng nhập hoặc mật khẩu chưa đúng.',
   UNAUTHENTICATED: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
   FORBIDDEN: 'Tài khoản của bạn không có quyền thực hiện thao tác này.',
@@ -52,9 +78,18 @@ const messages: Record<string, string> = { REGISTRATION_CONFLICT: 'Tên đăng n
   INTERNAL_ERROR: 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.',
 };
 export function errorMessage(error: unknown): string {
-  return error instanceof ApiFailure ? messages[error.code] ?? 'Chưa thể hoàn tất yêu cầu. Vui lòng thử lại.' : 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+  return error instanceof ApiFailure
+    ? messages[error.code] ?? 'Chưa thể hoàn tất yêu cầu. Vui lòng thử lại.'
+    : 'Đã có lỗi xảy ra. Vui lòng thử lại.';
 }
-interface Options { method?: string; body?: unknown; key?: string; signal?: AbortSignal; auth?: boolean; timeoutMs?: number }
+interface Options {
+  method?: string;
+  body?: unknown;
+  key?: string;
+  signal?: AbortSignal;
+  auth?: boolean;
+  timeoutMs?: number
+}
 export async function request<T>(path: string, options: Options = {}): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15000);
@@ -66,7 +101,7 @@ export async function request<T>(path: string, options: Options = {}): Promise<T
   // API calls omit cookies, including ngrok's browser-warning acknowledgement.
   // Ask ngrok for the API response instead of its interstitial page.
   if (/\.ngrok-free\.(app|dev)$/.test(window.location.hostname)
-      && new URL(url, window.location.href).origin === window.location.origin) {
+    && new URL(url, window.location.href).origin === window.location.origin) {
     headers['ngrok-skip-browser-warning'] = '1';
   }
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -74,21 +109,29 @@ export async function request<T>(path: string, options: Options = {}): Promise<T
   if (options.key) headers['Idempotency-Key'] = options.key;
   try {
     const response = await fetch(url, {
-      method: options.method ?? 'GET', headers, signal, credentials: 'omit', cache: 'no-store', redirect: 'error',
+      method: options.method ?? 'GET',
+      headers,
+      signal,
+      credentials: 'omit',
+      cache: 'no-store',
+      redirect: 'error',
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
     if (response.status === 401 && token && token === accessToken && generation === sessionGeneration) onUnauthorized?.();
     if (!response.ok) {
       let error: Partial<ErrorBody> = {};
-      try { error = await response.json(); } catch { /* Proxies may return HTML. Never echo it. */ }
-      throw new ApiFailure(error.code ?? (response.status === 429 ? 'RATE_LIMITED' : 'INTERNAL_ERROR'), response.status, error.requestId);
+      try { error = await response.json(); }
+      catch { /* Proxies may return HTML. Never echo it. */ }
+      throw new ApiFailure(error.code ?? (response.status === 429 ? 'RATE_LIMITED' : 'INTERNAL_ERROR'), response.status, error.requestId, error.fieldErrors);
     }
     if (response.status === 204) return undefined as T;
     try { return await response.json() as T; }
     catch { throw new ApiFailure('INVALID_RESPONSE'); }
-  } catch (error) {
+  }
+  catch (error) {
     if (options.signal?.aborted) throw error;
     if (error instanceof ApiFailure) throw error;
     throw new ApiFailure(controller.signal.aborted ? 'REQUEST_TIMEOUT' : 'NETWORK_ERROR');
-  } finally { clearTimeout(timer); }
+  }
+  finally { clearTimeout(timer); }
 }

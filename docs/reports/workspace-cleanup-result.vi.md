@@ -42,7 +42,7 @@ Vite có cảnh báo chunk PDF lớn hơn 500 kB; build vẫn thành công. Mave
 Từ thư mục gốc BankingPrj, khởi động public demo bằng lệnh đã cập nhật:
 
 ```powershell
-.\scripts\Start-PublicDemo.ps1 -PublicUrl "https://unselect-rebate-tall.ngrok-free.dev"
+.\scripts\Start-PublicDemo.ps1 -PublicUrl "https://ten-duoc-cap.ngrok-free.dev"
 ```
 
 Cần mở Docker Desktop trước. Các lệnh Initialize-Docker và Seed-DockerDemo cũng đã chuyển vào scripts/; không cần chạy lại chúng chỉ vì dọn workspace. Xem [README](../../README.md), [cấu trúc hiện tại](../architecture/project-structure.vi.md) và [manifest kế hoạch](../architecture/workspace-cleanup-plan.vi.md).

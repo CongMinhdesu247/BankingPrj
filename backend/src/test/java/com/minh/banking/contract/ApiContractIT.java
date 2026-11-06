@@ -72,7 +72,7 @@ class ApiContractIT extends TransferIntegrationTestSupport {
     @Test
     void unexpectedFailureHasRequestIdAndNeverExposesInternalException() throws Exception {
         doThrow(new IllegalStateException("secret SQL insert into customer password=never-expose"))
-            .when(AopTestUtils.<CustomerService>getUltimateTargetObject(customers)).get(any(UUID.class));
+        .when(AopTestUtils.<CustomerService>getUltimateTargetObject(customers)).get(any(UUID.class));
         var response = request("GET", "/customers/" + UUID.randomUUID(), null);
         assertError(response, 500, "INTERNAL_ERROR");
         assertThat(response.body()).doesNotContain("secret", "IllegalStateException", "never-expose");

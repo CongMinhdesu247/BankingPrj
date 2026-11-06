@@ -1,15 +1,17 @@
-﻿#requires -Version 7.0
-# Explicit fixtures for the isolated Docker demo only; safe to rerun.
+# Explicit fixtures for the isolated Docker demo only; safe to rerun on Windows PowerShell 5.1+ or PowerShell 7+.
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $backendRoot = Join-Path $projectRoot 'backend'
 Set-Location -LiteralPath $projectRoot
+$envPath = Join-Path $projectRoot '.env'
+if (-not (Test-Path -LiteralPath $envPath)) { throw 'Run ./scripts/Initialize-Docker.ps1 first.' }
 $settings = @{}
-Get-Content (Join-Path $projectRoot '.env') | ForEach-Object {
+Get-Content -LiteralPath $envPath | ForEach-Object {
     if ($_ -match '^([^#=]+)=(.*)$') { $settings[$matches[1].Trim()] = $matches[2].Trim() }
 }
 function Sql([string]$query) {
-    $result = $query | & docker compose exec -T postgres psql -X -U banking_demo -d banking_docker_demo -v ON_ERROR_STOP=1 -A -t
+    $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($query))
+    $result = & docker compose exec -T postgres sh -c "printf '%s' '$b64' | base64 -d | psql -X -U banking_demo -d banking_docker_demo -v ON_ERROR_STOP=1 -A -t"
     if ($LASTEXITCODE -ne 0) { throw 'Docker demo SQL failed.' }
     return ($result -join "`n").Trim()
 }
@@ -17,7 +19,7 @@ function Api([string]$method, [string]$path, $body, [string]$token = '', [string
     $headers = @{'X-Request-Id'='local-mockdata-v1'}
     if ($token) { $headers.Authorization = "Bearer $token" }
     if ($key) { $headers['Idempotency-Key'] = $key }
-    $params = @{Uri="http://127.0.0.1:8090/api/v1$path"; Method=$method; Headers=$headers; TimeoutSec=30}
+    $params = @{Uri="http://127.0.0.1:8090/api/v1$path"; Method=$method; Headers=$headers; TimeoutSec=30; UseBasicParsing=$true}
     if ($null -ne $body) {
         $params.ContentType = 'application/json; charset=utf-8'
         $params.Body = [Text.Encoding]::UTF8.GetBytes(($body | ConvertTo-Json -Compress -Depth 5))
@@ -25,20 +27,25 @@ function Api([string]$method, [string]$path, $body, [string]$token = '', [string
     Invoke-RestMethod @params
 }
 try {
-    $admin = (Api POST '/auth/login' @{username='docker.admin';password=$settings['DOCKER_ADMIN_PASSWORD']}).accessToken
     New-Item -ItemType Directory -Force -Path (Join-Path $backendRoot 'config') | Out-Null
     $credentialPath = Join-Path $backendRoot 'config/docker-demo.credentials.txt'
-    if (Test-Path $credentialPath) {
-        $password = ((Get-Content $credentialPath | Where-Object { $_ -like 'password=*' }) -replace '^password=','')
+    $alreadySeeded = (Sql "SELECT 1 FROM audit_logs WHERE action='LOCAL_MOCK_OPENING_V1' LIMIT 1") -eq '1'
+    if ($alreadySeeded -and -not (Test-Path -LiteralPath $credentialPath)) {
+        Write-Output 'Demo fixture already exists in database volume.'
+        exit 0
+    }
+    $admin = (Api POST '/auth/login' @{username='docker.admin';password=$settings['DOCKER_ADMIN_PASSWORD']}).accessToken
+    if (Test-Path -LiteralPath $credentialPath) {
+        $password = ((Get-Content -LiteralPath $credentialPath | Where-Object { $_ -like 'password=*' }) -replace '^password=','').Trim()
     } else {
         $password = 'Mock-' + [guid]::NewGuid().ToString('N').Substring(0,16) + '!a1'
-        "password=$password`nusers=mock.an,mock.linh,mock.minh,mock.staff,mock.risk" | Set-Content $credentialPath -Encoding utf8
+        [IO.File]::WriteAllText($credentialPath, "password=$password`nusers=mock.an,mock.linh,mock.minh,mock.staff,mock.risk`n", [Text.UTF8Encoding]::new($false))
     }
     $people = @(
-        @{code='MOCK-AN'; name='Nguyễn Minh An'; username='mock.an'; amount=200000000; phone='0900000101'},
-        @{code='MOCK-LINH'; name='Trần Gia Linh'; username='mock.linh'; amount=150000000; phone='0900000102'},
-        @{code='MOCK-MINH'; name='Lê Hoàng Minh'; username='mock.minh'; amount=100000000; phone='0900000103'},
-        @{code='MOCK-RESERVE'; name='Quỹ vốn mô phỏng local'; username=''; amount=0; phone='0900000199'}
+        @{code='MOCK-AN'; name=[regex]::Unescape('Nguy\u1ec5n Minh An'); username='mock.an'; amount=200000000; phone='0900000101'},
+        @{code='MOCK-LINH'; name=[regex]::Unescape('Tr\u1ea7n Gia Linh'); username='mock.linh'; amount=150000000; phone='0900000102'},
+        @{code='MOCK-MINH'; name=[regex]::Unescape('L\u00ea Ho\u00e0ng Minh'); username='mock.minh'; amount=100000000; phone='0900000103'},
+        @{code='MOCK-RESERVE'; name=[regex]::Unescape('Qu\u1ef9 v\u1ed1n m\u00f4 ph\u1ecfng local'); username=''; amount=0; phone='0900000199'}
     )
     foreach ($person in $people) {
         $customerId = Sql "SELECT id FROM customers WHERE customer_code='$($person.code)'"
@@ -62,6 +69,7 @@ try {
     # Documented opening book capital: 500,000,000 VND in MOCK-RESERVE.
     $reserveId = $people[3].accountId
     $ids = ($people | ForEach-Object { "'$($_.accountId)'::uuid" }) -join ','
+    $openingDesc = [regex]::Unescape('V\u1ed1n m\u1edf s\u1ed5 m\u00f4 ph\u1ecfng local')
     $seed = @"
 BEGIN;
 SELECT pg_advisory_xact_lock(734920261030);
@@ -81,7 +89,7 @@ BEGIN
         $seed += @"
 
     INSERT INTO transactions(id,reference,source_account_id,destination_account_id,amount,currency,type,status,description)
-      VALUES ('$txId','OPN-$txId','$reserveId','$($person.accountId)',$($person.amount),'VND','OPENING','COMPLETED','Vốn mở sổ mô phỏng local');
+      VALUES ('$txId','OPN-$txId','$reserveId','$($person.accountId)',$($person.amount),'VND','OPENING','COMPLETED','$openingDesc');
     UPDATE accounts SET balance=balance-$($person.amount),version=version+1,updated_at=now() WHERE id='$reserveId';
     UPDATE accounts SET balance=balance+$($person.amount),version=version+1,updated_at=now() WHERE id='$($person.accountId)';
     INSERT INTO transaction_entries(transaction_id,account_id,direction,amount,currency,balance_after,created_at)
@@ -106,13 +114,14 @@ COMMIT;
     }
     # Real API transfers exercise audit, idempotency, outbox, fraud and notifications.
     $transfers = @(@{from=0;to=1;amount='1250000'},@{from=1;to=2;amount='750000'},@{from=2;to=0;amount='250000'},@{from=0;to=1;amount='100000000'})
+    $transferSuffix = [regex]::Unescape('Chuy\u1ec3n ti\u1ec1n m\u1eabu')
     for ($i=0; $i -lt $transfers.Count; $i++) {
         $t=$transfers[$i]; $source=$people[$t.from]; $destination=$people[$t.to]
         if (-not (Sql "SELECT id FROM beneficiaries WHERE owner_customer_id='$($source.customerId)' AND destination_account_id='$($destination.accountId)' AND deleted_at IS NULL")) {
             $null = Api POST '/me/beneficiaries' @{destinationAccountId=$destination.accountId;nickname=$destination.name} $source.token
         }
         # Persistent transaction description guards reruns even after idempotency expires.
-        $description = "MOCK-V1-$i - Chuyển tiền mẫu"
+        $description = "MOCK-V1-$i - $transferSuffix"
         if (-not (Sql "SELECT id FROM transactions WHERE source_account_id='$($source.accountId)' AND description='$description'")) {
             $null = Api POST '/transfers' @{sourceAccountId=$source.accountId;destinationAccountId=$destination.accountId;amount=$t.amount;currency='VND';description=$description} $source.token "local-mock-v1-$i"
         }

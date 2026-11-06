@@ -11,8 +11,8 @@ public class DevBootstrapConfig {
     @Bean
     @ConditionalOnProperty(name = "banking.security.bootstrap.enabled", havingValue = "true")
     ApplicationRunner bootstrapAdmin(BootstrapAdminService bootstrap,
-            @Value("${banking.security.bootstrap.username:admin}") String username,
-            @Value("${banking.security.bootstrap.password:}") String password) {
+        @Value("${banking.security.bootstrap.username:admin}") String username,
+        @Value("${banking.security.bootstrap.password:}") String password) {
         return arguments -> bootstrap.seed(username, password);
     }
 }

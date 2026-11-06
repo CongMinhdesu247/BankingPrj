@@ -20,6 +20,9 @@ public class AuthService {
         TokenResponse result;
         try { result=verification.verify(request); }
         catch (BusinessException failure) {
+            if (ErrorCode.MFA_REQUIRED.name().equals(failure.getCode())) {
+                throw failure;
+            }
             // Verification's read transaction has ended before this durable write.
             try { history.record(request.username(),null,false); }
             catch (RuntimeException unavailable) {

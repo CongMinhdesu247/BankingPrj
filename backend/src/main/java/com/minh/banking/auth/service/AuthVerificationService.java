@@ -17,20 +17,23 @@ public class AuthVerificationService {
     private final String dummyHash;
     private final SecurityCenterService security;
     private final org.springframework.jdbc.core.JdbcTemplate jdbc;
-    public AuthVerificationService(UserRepository users,PasswordEncoder passwords,JwtService tokens,SecurityCenterService security,org.springframework.jdbc.core.JdbcTemplate jdbc) {
-        this.security=security;this.jdbc=jdbc;
-        this.users=users; this.passwords=passwords; this.tokens=tokens;
-        dummyHash=passwords.encode(UUID.randomUUID().toString());
+    public AuthVerificationService(UserRepository users, PasswordEncoder passwords, JwtService tokens, SecurityCenterService security, org.springframework.jdbc.core.JdbcTemplate jdbc) {
+        this.security = security;
+        this.jdbc = jdbc;
+        this.users = users;
+        this.passwords = passwords;
+        this.tokens = tokens;
+        dummyHash = passwords.encode(UUID.randomUUID().toString());
     }
     @Transactional
     public TokenResponse verify(LoginRequest request) {
-        jdbc.queryForList("SELECT id FROM users WHERE username=? FOR UPDATE",UUID.class,request.username());
-        var found=users.findWithRolesByUsername(request.username());
-        boolean matches=passwords.matches(request.password(),found.map(user->user.getPasswordHash()).orElse(dummyHash));
+        var found = users.findWithRolesByUsername(request.username());
+        boolean matches = passwords.matches(request.password(), found.map(user -> user.getPasswordHash()).orElse(dummyHash));
         if (!matches || found.isEmpty() || !found.get().isEnabled() || found.get().getRoles().isEmpty())
-            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS,"Username or password is invalid.");
-        var user=found.get();
-        security.verifyOtp(user.getId(),request.otp(),true);
-        return new TokenResponse(tokens.issue(user.getId()),"Bearer",tokens.ttlSeconds(),UserService.toResponse(user));
+        throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "Username or password is invalid.");
+        var user = found.get();
+        security.lockUser(user.getId());
+        security.verifyOtp(user.getId(), request.otp(), true);
+        return new TokenResponse(tokens.issue(user.getId()), "Bearer", tokens.ttlSeconds(), UserService.toResponse(user));
     }
 }

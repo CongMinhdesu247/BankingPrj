@@ -90,7 +90,7 @@ services:
       BOOTSTRAP_ADMIN_PASSWORD: ${DOCKER_ADMIN_PASSWORD:?Run run.bat or sh ./run.sh to initialize .env}
       BANKING_SECURITY_ALLOWED_ORIGINS: ${DOCKER_ALLOWED_ORIGINS:-http://localhost:8090,http://127.0.0.1:8090}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
       JAVA_TOOL_OPTIONS: -Xms128m -Xmx768m
     depends_on:
       postgres:

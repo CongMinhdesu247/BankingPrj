@@ -21,7 +21,7 @@ class HookSecurityTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_traversal_is_rejected_and_tool_arguments_are_not_logged(self):
-        test_root = ROOT / "target"
+        test_root = ROOT / "backend/target"
         test_root.mkdir(exist_ok=True)
         for shell in ["powershell", "bash"]:
             with self.subTest(shell=shell), tempfile.TemporaryDirectory(dir=test_root, prefix="security-hooks-") as directory:
