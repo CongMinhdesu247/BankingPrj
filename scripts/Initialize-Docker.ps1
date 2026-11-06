@@ -36,6 +36,8 @@ if (-not (Test-Path -LiteralPath $envFile)) {
         "DOCKER_JWT_SECRET=$(& $required['DOCKER_JWT_SECRET'])"
         "DOCKER_ADMIN_PASSWORD=$(& $required['DOCKER_ADMIN_PASSWORD'])"
         "DOCKER_ALLOWED_ORIGINS=$(& $required['DOCKER_ALLOWED_ORIGINS'])"
+        'DOCKER_TRUST_PROXY_HEADERS=false'
+        'DOCKER_SEED_DEMO=true'
         'GEMINI_API_KEY='
         'GEMINI_MODEL=gemini-2.5-flash-lite'
     )

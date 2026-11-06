@@ -9,6 +9,10 @@ $settings = @{}
 Get-Content -LiteralPath $envPath | ForEach-Object {
     if ($_ -match '^([^#=]+)=(.*)$') { $settings[$matches[1].Trim()] = $matches[2].Trim() }
 }
+if ($settings['DOCKER_SEED_DEMO'] -eq 'false') {
+    Write-Output 'Skipping demo seed because DOCKER_SEED_DEMO=false in .env.'
+    exit 0
+}
 function Sql([string]$query) {
     $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($query))
     $result = & docker compose exec -T postgres sh -c "printf '%s' '$b64' | base64 -d | psql -X -U banking_demo -d banking_docker_demo -v ON_ERROR_STOP=1 -A -t"

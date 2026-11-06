@@ -18,12 +18,13 @@ import org.springframework.web.cors.*;
 public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, CurrentUserJwtConverter converter, SecurityErrorWriter errors,
-        com.minh.banking.redis.RateLimitService limits) throws Exception {
+        com.minh.banking.redis.RateLimitService limits,
+        @Value("${banking.security.trust-forwarded-headers:false}") boolean trustForwardedHeaders) throws Exception {
         var entry = (org.springframework.security.web.AuthenticationEntryPoint)
         (request, response, exception) -> errors.write(request, response, ErrorCode.UNAUTHENTICATED);
         var denied = (org.springframework.security.web.access.AccessDeniedHandler)
         (request, response, exception) -> errors.write(request, response, ErrorCode.FORBIDDEN);
-        return http.addFilterAfter(new com.minh.banking.redis.RateLimitFilter(limits, errors),
+        return http.addFilterAfter(new com.minh.banking.redis.RateLimitFilter(limits, errors, trustForwardedHeaders),
             org.springframework.security.web.access.intercept.AuthorizationFilter.class)
         .csrf(AbstractHttpConfigurer::disable).cors(Customizer.withDefaults())
         .formLogin(AbstractHttpConfigurer::disable).httpBasic(AbstractHttpConfigurer::disable)

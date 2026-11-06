@@ -76,6 +76,7 @@ banking:
     counter-window-seconds: 60
     counter-ttl-seconds: 120
   security:
+    trust-forwarded-headers: ${TRUST_FORWARDED_HEADERS:false}
     bootstrap:
       enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
       username: ${BOOTSTRAP_ADMIN_USERNAME:admin}

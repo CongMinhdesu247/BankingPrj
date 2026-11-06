@@ -51,6 +51,13 @@ docker compose ps -a
 docker compose logs --tail 100
 ```
 
+**Chia sẻ / Công khai ứng dụng ra Internet (qua ngrok hoặc Cloudflare Tunnel):**
+```powershell
+# Tự động bật chống giả mạo IP qua Proxy (DOCKER_TRUST_PROXY_HEADERS=true) và mở HTTPS tunnel:
+powershell -ExecutionPolicy Bypass -File ./scripts/Start-PublicDemo.ps1 -PublicUrl https://ten-mien-cua-ban.ngrok-free.app
+```
+- Nếu triển khai công khai và **không muốn tạo các tài khoản mẫu (`mock.*`)**, chỉ cần đổi `DOCKER_SEED_DEMO=false` trong file `.env` trước khi chạy lần đầu.
+
 > **Lưu ý:** Giữ lại file `.env` để bảo toàn mật khẩu kết nối database giữa các lần chạy. Không chạy `docker compose down -v` nếu bạn muốn giữ lại dữ liệu đã tạo.
 
 ---
