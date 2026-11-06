@@ -1,13 +1,30 @@
 # Start after adding your tunnel setup locally. Never pass secrets or tokens on the command line.
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
-    [string]$PublicUrl,
+    [Parameter(Mandatory = $false)]
+    [string]$PublicUrl = '',
     [ValidateSet('ngrok', 'cloudflared')]
     [string]$Provider = 'ngrok'
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
+$envPath = Join-Path $projectRoot '.env'
+
+if ([string]::IsNullOrWhiteSpace($PublicUrl) -and (Test-Path -LiteralPath $envPath)) {
+    foreach ($line in [IO.File]::ReadAllLines($envPath)) {
+        if ($line -match '^DOCKER_ALLOWED_ORIGINS=(.*)$') {
+            $saved = $matches[1].Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ -like 'https://*' } | Select-Object -First 1
+            if ($saved) { $PublicUrl = $saved }
+        }
+    }
+}
+if ([string]::IsNullOrWhiteSpace($PublicUrl)) {
+    throw 'Pass -PublicUrl https://your-domain.ngrok-free.dev (or add it to DOCKER_ALLOWED_ORIGINS in .env).'
+}
+if ($PublicUrl -notmatch '^https?://') {
+    $PublicUrl = "https://$PublicUrl"
+}
+
 $address = $null
 if (-not [Uri]::TryCreate($PublicUrl, [UriKind]::Absolute, [ref]$address) -or
     $address.Scheme -ne 'https' -or -not $address.IsDefaultPort -or

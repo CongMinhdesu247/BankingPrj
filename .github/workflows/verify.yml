@@ -1,9 +1,16 @@
 name: Verify clean checkout
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
 permissions:
   contents: read
+
 jobs:
   frontend:
+    name: Frontend (Test & Build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -18,7 +25,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
   backend:
+    name: Backend (Java 21 Verify)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,3 +40,20 @@ jobs:
           java-version: '21'
           cache: maven
       - run: bash ./mvnw --batch-mode verify
+
+  docker-config:
+    name: Docker Compose & Scripts Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shell startup script syntax
+        run: sh -n ./run.sh
+      - name: Validate Docker Compose configuration
+        run: |
+          printf '%s\n' \
+            'DOCKER_DB_PASSWORD=ci-dummy-db-password' \
+            'DOCKER_JWT_SECRET=Y2ktZHVtbXktand0LXNlY3JldC1mb3ItY29tcG9zZS12YWxpZGF0aW9uLW9ubHk=' \
+            'DOCKER_ADMIN_PASSWORD=ci-dummy-admin-password' \
+            'DOCKER_ALLOWED_ORIGINS=http://localhost:8090,http://127.0.0.1:8090' > .env
+          docker compose config --quiet
+          rm -f .env

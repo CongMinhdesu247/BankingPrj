@@ -1,5 +1,7 @@
 # Bank Transaction & Fraud Monitoring System
 
+[![Verify clean checkout](https://github.com/CongMinhdesu247/BankingPrj/actions/workflows/verify.yml/badge.svg)](https://github.com/CongMinhdesu247/BankingPrj/actions/workflows/verify.yml)
+
 Hệ thống mô phỏng giao dịch ngân hàng số và giám sát gian lận theo thời gian thực (Spring Boot + React + PostgreSQL + Redis + Kafka).
 
 ---
@@ -54,7 +56,7 @@ docker compose logs --tail 100
 **Chia sẻ / Công khai ứng dụng ra Internet (qua ngrok hoặc Cloudflare Tunnel):**
 ```powershell
 # Tự động bật chống giả mạo IP qua Proxy (DOCKER_TRUST_PROXY_HEADERS=true) và mở HTTPS tunnel:
-powershell -ExecutionPolicy Bypass -File ./scripts/Start-PublicDemo.ps1 -PublicUrl https://ten-mien-cua-ban.ngrok-free.app
+powershell -ExecutionPolicy Bypass -File ./scripts/Start-PublicDemo.ps1 -PublicUrl unselect-rebate-tall.ngrok-free.dev
 ```
 - Nếu triển khai công khai và **không muốn tạo các tài khoản mẫu (`mock.*`)**, chỉ cần đổi `DOCKER_SEED_DEMO=false` trong file `.env` trước khi chạy lần đầu.
 
