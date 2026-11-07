@@ -54,9 +54,9 @@ docker compose logs --tail 100
 ```
 
 **Chia sẻ / Công khai ứng dụng ra Internet (qua ngrok hoặc Cloudflare Tunnel):**
+- Nhấn đúp vào file **`run-public.bat`** (hoặc chạy lệnh dưới đây):
 ```powershell
-# Tự động bật chống giả mạo IP qua Proxy (DOCKER_TRUST_PROXY_HEADERS=true) và mở HTTPS tunnel:
-powershell -ExecutionPolicy Bypass -File ./scripts/Start-PublicDemo.ps1 -PublicUrl unselect-rebate-tall.ngrok-free.dev
+powershell -ExecutionPolicy Bypass -File ./scripts/Start-PublicDemo.ps1 -PublicUrl https://unselect-rebate-tall.ngrok-free.dev
 ```
 - Nếu triển khai công khai và **không muốn tạo các tài khoản mẫu (`mock.*`)**, chỉ cần đổi `DOCKER_SEED_DEMO=false` trong file `.env` trước khi chạy lần đầu.
 

@@ -64,14 +64,34 @@ $updated = foreach ($line in $lines) {
 }
 if (-not $foundOrigins) { $updated = @($updated) + $originsSetting }
 if (-not $foundProxy) { $updated = @($updated) + $proxySetting }
-[IO.File]::WriteAllLines($envPath, [string[]]$updated, [Text.UTF8Encoding]::new($false))
+if (($updated -join "`n") -ne ($lines -join "`n")) {
+    [IO.File]::WriteAllLines($envPath, [string[]]$updated, [Text.UTF8Encoding]::new($false))
+}
 
 Push-Location $projectRoot
 try {
-    & docker compose up -d --wait --wait-timeout 300
+    Write-Output '[1/3] Building and starting Docker services...'
+    & docker compose up -d --build --wait --wait-timeout 600
     if ($LASTEXITCODE -ne 0) { throw 'Docker services are not ready. Tunnel was not started.' }
-    Write-Output "Publishing application at $origin with per-visitor proxy IP rate-limiting enabled."
-    Write-Output 'Keep this terminal open. Press Ctrl+C to stop sharing.'
+
+    Write-Output '[2/3] Ensuring demo accounts and sample data are ready...'
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Seed-DockerDemo.ps1')
+
+    $credFile = Join-Path $projectRoot 'backend/config/docker-demo.credentials.txt'
+    $demoPass = '(see backend/config/docker-demo.credentials.txt)'
+    if (Test-Path -LiteralPath $credFile) {
+        $demoPass = ((Get-Content -LiteralPath $credFile | Where-Object { $_ -like 'password=*' }) -replace '^password=','').Trim()
+    }
+    Write-Output ''
+    Write-Output '============================================================================'
+    Write-Output " [PUBLIC LINK]  $origin"
+    Write-Output '----------------------------------------------------------------------------'
+    Write-Output ' Customer accounts : mock.an, mock.linh, mock.minh'
+    Write-Output ' Staff / Risk      : mock.staff, mock.risk'
+    Write-Output " Password          : $demoPass"
+    Write-Output '============================================================================'
+    Write-Output '[3/3] Starting tunnel. Keep this terminal open (Press Ctrl+C to stop sharing)...'
+
     if ($Provider -eq 'ngrok') {
         & ngrok http --url $origin http://127.0.0.1:8090
     } else {
